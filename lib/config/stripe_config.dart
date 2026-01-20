@@ -1,0 +1,5 @@
+class StripeConfig {
+ 
+static const String publicKeyStripe= 'pk_test_51SpXPI1Zzf1hLpXtcDcdJ5vNyTFWw63UV99SqKvSTiLUJVM3RDgPQOW9xBDHfQHBvHpZFREiaBmm6BWziwoZk7XR00azPK9VVZ';
+
+}
