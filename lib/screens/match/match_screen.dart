@@ -146,7 +146,7 @@ class MatchScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Tienen 85% de compatibilidad en hábitos.', // Could be dynamic later
+                'Tienen bastantes similitudes', // Could be dynamic later
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,

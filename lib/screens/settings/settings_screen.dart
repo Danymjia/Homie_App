@@ -37,8 +37,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Premium Section
             _buildSection(
               context,
-              title: 'Membresía Premium',
-              icon: Icons.workspace_premium,
               children: [
                 if (isPremium) ...[
                   Container(
@@ -55,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             color: theme.primaryColor, size: 48),
                         const SizedBox(height: 8),
                         Text(
-                          'Eres Premium',
+                          'Ya eres Premium',
                           style: TextStyle(
                             color: theme.primaryColor,
                             fontSize: 18,
@@ -124,21 +122,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                   label: 'Contactar Soporte',
                   icon: Icons.support_agent,
-                  onTap: () => _showSupportDialog(context, 'Soporte Técnico'),
+                  onTap: () => context.push('/settings/contact'),
                 ),
                 const SizedBox(height: 12),
                 _buildSettingsButton(
                   context,
                   label: 'Reportar un Usuario',
                   icon: Icons.person_off,
-                  onTap: () => _showSupportDialog(context, 'Reportar Usuario'),
+                  onTap: () => context.push('/settings/report-user'),
                 ),
                 const SizedBox(height: 12),
                 _buildSettingsButton(
                   context,
                   label: 'Reportar un Problema',
                   icon: Icons.bug_report,
-                  onTap: () => _showSupportDialog(context, 'Reportar Problema'),
+                  onTap: () => context.push('/settings/report-problem'),
                 ),
               ],
             ),
@@ -167,9 +165,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSection(BuildContext context,
-      {required String title,
-      required IconData icon,
-      required List<Widget> children}) {
+      {String? title, IconData? icon, required List<Widget> children}) {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
@@ -182,21 +178,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, color: theme.primaryColor, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+          if (title != null && icon != null) ...[
+            Row(
+              children: [
+                Icon(icon, color: theme.primaryColor, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
           ...children,
         ],
       ),
@@ -293,27 +291,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Cerrar sesión',
               style: TextStyle(color: Theme.of(context).primaryColor),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSupportDialog(BuildContext context, String title) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: const Text(
-          'Esta funcionalidad implementará un formulario de contacto o reporte en futuras actualizaciones.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Entendido',
-                style: TextStyle(color: Theme.of(context).primaryColor)),
           ),
         ],
       ),

@@ -36,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   List<String> _houseRules = ['No smoking inside', 'Quiet hours after 10 PM'];
   List<Map<String, dynamic>> _userApartments = [];
   bool _hasApartments = false;
+  bool _showAllApartments = false;
 
   // Controllers
   late TextEditingController _aboutMeController;
@@ -202,6 +203,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _toggleApartmentStatus(
+      String apartmentId, bool currentStatus) async {
+    try {
+      final newStatus = !currentStatus;
+      await Supabase.instance.client
+          .from('apartments')
+          .update({'is_active': newStatus}).eq('id', apartmentId);
+
+      await _loadProfileData(); // Reload to reflect changes
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(newStatus
+                ? 'Habitación activada'
+                : 'Habitación marcada como ocupada'),
+            backgroundColor: newStatus ? Colors.green : Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error toggling apartment status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   // Edit lifestyle tags
   void _editLifestyleTags() {
     final suggestions = [
@@ -245,6 +276,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onSelected: (selected) {
                     setState(() {
                       if (selected) {
+                        if (_lifestyleTags.length >= 10) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Máximo 10 intereses permitidos'),
+                              backgroundColor: Colors.red,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
                         _lifestyleTags.add(suggestion);
                       } else {
                         _lifestyleTags.remove(suggestion);
@@ -302,6 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               borderSide: BorderSide(color: Color(0xFFE57373)),
             ),
           ),
+          maxLength: 250,
         ),
         actions: [
           TextButton(
@@ -523,7 +565,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () => context.push('/register-apartment'),
+                  onPressed: () {
+                    final authProvider =
+                        Provider.of<AuthProvider>(context, listen: false);
+                    final isPremium = authProvider.isPremium;
+                    final limit = isPremium ? 10 : 5;
+
+                    if (_userApartments.length >= limit) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: const Color(0xFF1A1A1A),
+                          title: const Text('Límite alcanzado',
+                              style: TextStyle(color: Colors.white)),
+                          content: Text(
+                            isPremium
+                                ? 'Has alcanzado el límite máximo de $limit habitaciones.'
+                                : 'Has alcanzado el límite de $limit habitaciones gratuitas. Mejora a Premium para registrar hasta 10.',
+                            style: const TextStyle(color: Colors.white70),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Cerrar'),
+                            ),
+                            if (!isPremium)
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  context.push('/premium/plans');
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE57373),
+                                ),
+                                child: const Text('Ser Premium'),
+                              ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      context.push('/register-apartment');
+                    }
+                  },
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text('Agregar habitación'),
                   style: ElevatedButton.styleFrom(
@@ -544,6 +627,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     // Show existing apartments
+    // Pagination logic
+    final apartmentsToShow =
+        _showAllApartments ? _userApartments : _userApartments.take(2).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -581,8 +668,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        ..._userApartments.map((apt) {
+        ...apartmentsToShow.map((apt) {
           final images = apt['images'] as List?;
+          final isActive = apt['is_active'] ?? true;
           final firstImage = (images != null && images.isNotEmpty)
               ? images[0]
               : 'https://via.placeholder.com/400x300';
@@ -662,23 +750,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Positioned(
                   top: 16,
                   right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.edit,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                  child: Row(
+                    children: [
+                      // Status Toggle Button
+                      GestureDetector(
+                        onTap: () =>
+                            _toggleApartmentStatus(apt['id'], isActive),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? Colors.green.withOpacity(0.9)
+                                : Colors.orange.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isActive
+                                    ? Icons.check_circle_outline
+                                    : Icons.lock_outline,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isActive ? 'Disponible' : 'Ocupado',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                   ),
                 ),
               ],
             ),
           );
         }),
+        // Show More/Less Button if we have > 2 items
+        if (_userApartments.length > 2)
+          Center(
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _showAllApartments = !_showAllApartments;
+                });
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _showAllApartments ? 'Ver menos' : 'Ver más',
+                    style: const TextStyle(
+                      color: Color(0xFFE57373),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    _showAllApartments
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: const Color(0xFFE57373),
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

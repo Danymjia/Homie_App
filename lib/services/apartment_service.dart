@@ -54,6 +54,7 @@ class ApartmentService {
         'amenities':
             expenses, // Using amenities col for expenses/services for now
         'images': imageUrls,
+        'is_active': true, // Explicitly set to active
         // 'created_at' is default
       });
     } catch (e) {

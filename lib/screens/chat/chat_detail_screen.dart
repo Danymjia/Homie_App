@@ -146,24 +146,10 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const Text(
-                        // Removed 'Online' hardcode, or keep as static 'Active' or remove
-                        'En línea',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                        ),
-                      ),
                     ],
                   ),
                 ],
               ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -173,38 +159,38 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
               decoration: themeProvider.chatWallpaperPath != null
                   ? BoxDecoration(
                       image: DecorationImage(
-                        image: FileImage(
-                            File(themeProvider.chatWallpaperPath!)),
+                        image:
+                            FileImage(File(themeProvider.chatWallpaperPath!)),
                         fit: BoxFit.cover,
                         opacity: themeProvider.chatWallpaperOpacity,
                       ),
                     )
                   : null,
               child: StreamBuilder<List<Map<String, dynamic>>>(
-              stream: _chatService.getMessagesStream(widget.chatId),
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                stream: _chatService.getMessagesStream(widget.chatId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                final messages = snapshot.data!.reversed.toList();
+                  final messages = snapshot.data!.reversed.toList();
 
-                return ListView.builder(
-                  controller: _scrollController,
-                  reverse: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    final isMe = message['sender_id'] == _currentUserId;
-                    return _buildMessageBubble(message, isMe);
-                  },
-                );
-              },
-            ),
+                  return ListView.builder(
+                    controller: _scrollController,
+                    reverse: true,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      final isMe = message['sender_id'] == _currentUserId;
+                      return _buildMessageBubble(message, isMe);
+                    },
+                  );
+                },
+              ),
             ),
           ),
 
@@ -246,8 +232,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   Container(
                     width: 48,
                     height: 48,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE57373),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
@@ -263,7 +249,6 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
     );
   }
-  
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe) {
     final time = DateTime.parse(message['created_at']).toLocal();
@@ -278,7 +263,8 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFFE57373) : const Color(0xFF1F1F1F),
+          color:
+              isMe ? Theme.of(context).primaryColor : const Color(0xFF1F1F1F),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(12),
             topRight: const Radius.circular(12),

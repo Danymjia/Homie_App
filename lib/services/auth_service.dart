@@ -136,7 +136,14 @@ class AuthService {
 
   // Reset password
   Future<void> resetPassword(String email) async {
-    await _supabase.auth.resetPasswordForEmail(email);
+    // Apuntar a la URL de la web desplegada
+    // IMPORTANTE: Asegúrate que esta URL esté en la lista de Redirect URLs de Supabase
+    const webRedirectUrl =
+        'https://elaborate-stardust-b3cead.netlify.app/reset-password';
+    await _supabase.auth.resetPasswordForEmail(
+      email,
+      redirectTo: webRedirectUrl,
+    );
   }
 
   // Check if email is confirmed

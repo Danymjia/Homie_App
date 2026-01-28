@@ -6,6 +6,8 @@ import 'package:roomie_app/screens/map/location_picker_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geocoding/geocoding.dart' as geo;
 import 'package:roomie_app/services/apartment_service.dart';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/auth_provider.dart';
 
 class RegisterApartmentScreen extends StatefulWidget {
   const RegisterApartmentScreen({super.key});
@@ -130,12 +132,16 @@ class _RegisterApartmentScreenState extends State<RegisterApartmentScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (e.toString().contains('Has alcanzado el límite')) {
+            _showLimitDialog();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -350,6 +356,7 @@ class _RegisterApartmentScreenState extends State<RegisterApartmentScreen> {
                     controller: _ruleController,
                     label: '',
                     hint: 'Ej. No fiestas',
+                    isRequired: false,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -725,6 +732,44 @@ class _RegisterApartmentScreenState extends State<RegisterApartmentScreen> {
         value: value,
         onChanged: (v) => onChanged(v ?? false),
         controlAffinity: ListTileControlAffinity.leading,
+      ),
+    );
+  }
+
+  void _showLimitDialog() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isPremium = authProvider.isPremium;
+    final limit = isPremium ? 10 : 5;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text('Límite alcanzado',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          isPremium
+              ? 'Has alcanzado el límite máximo de $limit habitaciones.'
+              : 'Has alcanzado el límite de $limit habitaciones gratuitas. Mejora a Premium para registrar hasta 10.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cerrar'),
+          ),
+          if (!isPremium)
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                context.push('/premium/plans');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFE57373),
+              ),
+              child: const Text('Ser Premium'),
+            ),
+        ],
       ),
     );
   }

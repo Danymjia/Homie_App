@@ -17,6 +17,9 @@ import 'package:roomie_app/screens/premium/premium_plans_screen.dart';
 import 'package:roomie_app/screens/premium/who_liked_me_screen.dart';
 import 'package:roomie_app/screens/premium/custom_themes_screen.dart';
 import 'package:roomie_app/screens/settings/settings_screen.dart';
+import 'package:roomie_app/screens/settings/contact_support_screen.dart';
+import 'package:roomie_app/screens/settings/report_user_screen.dart';
+import 'package:roomie_app/screens/settings/report_problem_screen.dart';
 import 'package:roomie_app/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -124,6 +127,20 @@ class AppRouter {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+        routes: [
+          GoRoute(
+            path: 'contact',
+            builder: (context, state) => const ContactSupportScreen(),
+          ),
+          GoRoute(
+            path: 'report-user',
+            builder: (context, state) => const ReportUserScreen(),
+          ),
+          GoRoute(
+            path: 'report-problem',
+            builder: (context, state) => const ReportProblemScreen(),
+          ),
+        ],
       ),
     ],
   );

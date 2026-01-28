@@ -7,6 +7,8 @@ import 'package:roomie_app/services/match_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:roomie_app/screens/match/match_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/theme_provider.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -20,6 +22,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   late TabController _tabController;
   final ChatService _chatService = ChatService();
   final MatchService _matchService = MatchService();
+  int _requestsTabIndex = 0; // 0: Received, 1: Sent
 
   @override
   void initState() {
@@ -93,6 +96,20 @@ class _ChatListScreenState extends State<ChatListScreen>
     }
   }
 
+  Future<void> _handleCancelSent(String swipeId) async {
+    try {
+      await _matchService.cancelSentLike(swipeId);
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Solicitud cancelada')),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error cancelling: $e');
+    }
+  }
+
   Future<void> _launchHomieHelper() async {
     final Uri url = Uri.parse(
         'https://cdn.botpress.cloud/webchat/v3.5/shareable.html?configUrl=https://files.bpcontent.cloud/2026/01/27/23/20260127232237-CNXBLQW8.json');
@@ -107,8 +124,12 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final currentTheme =
+        themeProvider.getThemeById(themeProvider.currentThemeId);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -126,8 +147,8 @@ class _ChatListScreenState extends State<ChatListScreen>
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFFFF4B63),
-          labelColor: const Color(0xFFFF4B63),
+          indicatorColor: currentTheme['primaryColor'],
+          labelColor: Colors.white,
           unselectedLabelColor: Colors.grey,
           tabs: const [
             Tab(text: 'Chats'),
@@ -246,193 +267,252 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 
   Widget _buildRequestsList() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _matchService.getIncomingLikes(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final requests = snapshot.data ?? [];
-
-        if (requests.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.favorite_border, size: 48, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'No tienes nuevas solicitudes.',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+    return Column(
+      children: [
+        // Toggle Buttons
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(25),
             ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: requests.length,
-          itemBuilder: (context, index) {
-            final req = requests[index];
-            final profile = req['profiles'] as Map<String, dynamic>?;
-            final apt = req['apartments'] as Map<String, dynamic>?;
-
-            final name = profile?['full_name'] ?? 'Usuario';
-            final photoUrl = profile?['photo_url'];
-            final age = profile?['age'] ?? 0;
-            // aptTitle isn't in strict design but good for context.
-            // Design shows: "Modern Loft, San Francisco" and profession.
-            final profession =
-                profile?['profession'] ?? 'Estudiante'; // Fallback
-            final location = apt?['title'] ?? 'Tu publicación';
-            final createdAt =
-                DateTime.tryParse(req['created_at'] ?? '') ?? DateTime.now();
-            final timeAgo = _getTimeAgo(createdAt);
-
-            return Container(
-              margin: const EdgeInsets.only(bottom: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
-              ),
-              child: Row(
-                children: [
-                  // Avatar with Heart Badge
-                  Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: const Color(0xFFFF4B63), width: 1),
-                        ),
-                        padding: const EdgeInsets.all(2),
-                        child: ProfileAvatar(
-                          imageUrl: photoUrl,
-                          name: name,
-                          size: 60,
-                          borderRadius: 50,
-                        ),
+            padding: const EdgeInsets.all(4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _requestsTabIndex = 0),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _requestsTabIndex == 0
+                            ? const Color(0xFFFF4B63)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF4B63),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.favorite,
-                              size: 10, color: Colors.white),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  // Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$name, $age',
-                          style: const TextStyle(
+                      child: const Center(
+                        child: Text(
+                          'Recibidas',
+                          style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          profession,
-                          style: const TextStyle(
-                            color: Colors.grey,
-                            fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _requestsTabIndex = 1),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _requestsTabIndex == 1
+                            ? const Color(0xFFFF4B63)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Enviadas',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(Icons.home,
-                                size: 12,
-                                color:
-                                    const Color(0xFFFF4B63).withOpacity(0.8)),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                location,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // List Content
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _requestsTabIndex == 0
+                ? _matchService.getIncomingLikes()
+                : _matchService.getSentLikes(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final requests = snapshot.data ?? [];
+
+              if (requests.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                          _requestsTabIndex == 0
+                              ? Icons.favorite_border
+                              : Icons.send_rounded,
+                          size: 48,
+                          color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        _requestsTabIndex == 0
+                            ? 'No tienes solicitudes nuevas.'
+                            : 'No has enviado solicitudes aún.',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final req = requests[index];
+                  final profile = req['profiles'] as Map<String, dynamic>?;
+                  final apt = req['apartments'] as Map<String, dynamic>?;
+
+                  final name = profile?['full_name'] ?? 'Usuario';
+                  final photoUrl = profile?['photo_url'];
+                  final age = profile?['age']; // Might be null
+                  final profession = profile?['profession'] ?? 'Sin profesión';
+                  final aptTitle = apt?['title'] ?? 'Departamento';
+                  // ignore: unused_local_variable
+                  final createdAt =
+                      DateTime.tryParse(req['created_at'] ?? '') ??
+                          DateTime.now();
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Row(
+                      children: [
+                        // Avatar
+                        ProfileAvatar(
+                          imageUrl: photoUrl,
+                          name: name,
+                          size: 50,
+                          borderRadius: 50,
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                age != null ? '$name, $age' : name,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                profession,
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(Icons.home,
+                                      size: 12, color: Color(0xFFFF4B63)),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      aptTitle,
+                                      style: TextStyle(
+                                        color: Colors.grey[400],
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Action
+                        if (_requestsTabIndex == 0) ...[
+                          // Received Actions (Accept/Reject)
+                          Column(
+                            children: [
+                              InkWell(
+                                onTap: () => _handleAccept(
+                                  swipeId: req['id'],
+                                  otherUserId: req['user_id'],
+                                  apartmentId: req['apartment_id'],
+                                  otherName: name,
+                                  otherPhotoUrl: photoUrl ?? '',
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFF4B63),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.favorite,
+                                      size: 20, color: Colors.white),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => _handleReject(req['id']),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[800],
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.close,
+                                      size: 20, color: Colors.grey),
+                                ),
+                              ),
+                            ],
+                          )
+                        ] else ...[
+                          // Sent Action (Cancel)
+                          InkWell(
+                            onTap: () => _handleCancelSent(req['id']),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[800],
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: const Text(
+                                'Cancelar',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          timeAgo,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 10,
                           ),
-                        ),
+                        ]
                       ],
                     ),
-                  ),
-                  // Actions
-                  Column(
-                    children: [
-                      // Accept Button
-                      InkWell(
-                        onTap: () => _handleAccept(
-                          swipeId: req['id'],
-                          otherUserId: req['user_id'],
-                          apartmentId: req['apartment_id'],
-                          otherName: name,
-                          otherPhotoUrl: photoUrl ?? '',
-                        ),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFFF4B63),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.favorite,
-                              color: Colors.white, size: 20),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Reject Button
-                      InkWell(
-                        onTap: () => _handleReject(req['id']),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[800],
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.close,
-                              color: Colors.grey, size: 20),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 

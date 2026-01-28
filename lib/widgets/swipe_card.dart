@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
+import 'package:roomie_app/widgets/rating_dialog.dart';
 
 class SwipeCard extends StatefulWidget {
   final Map<String, dynamic> apartment;
@@ -201,12 +202,12 @@ class _SwipeCardState extends State<SwipeCard> {
 
                     const SizedBox(height: 16),
 
-                    // Roommate info (Placeholder if data missing)
+                    // Roommate info (Owner)
                     Row(
                       children: [
                         ProfileAvatar(
-                          imageUrl: widget.apartment['roommate']?['photo'],
-                          name: widget.apartment['roommate']?['name'] ??
+                          imageUrl: widget.apartment['profiles']?['photo_url'],
+                          name: widget.apartment['profiles']?['full_name'] ??
                               'Usuario',
                           size: 32,
                           borderRadius: 50,
@@ -216,7 +217,7 @@ class _SwipeCardState extends State<SwipeCard> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.apartment['roommate']?['name'] ??
+                              widget.apartment['profiles']?['full_name'] ??
                                   'Usuario',
                               style: const TextStyle(
                                 color: Colors.white,
@@ -300,6 +301,42 @@ class _SwipeCardState extends State<SwipeCard> {
                             .toList(),
                       ),
                     ],
+
+                    const SizedBox(height: 24),
+
+                    // Rating Button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => RatingDialog(
+                              onSubmitted: (rating, comment) {
+                                // TODO: Implement actual service call in production
+                                debugPrint(
+                                    'Rating submitted: $rating stars. Comment: $comment');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content:
+                                          Text('¡Gracias por tu valoración!')),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.star, color: Colors.amber),
+                        label: const Text('Valorar Publicación'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white.withOpacity(0.1),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

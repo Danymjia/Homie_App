@@ -116,4 +116,24 @@ class ThemeProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('theme_color_opacity', opacity);
   }
+
+  Map<String, dynamic> getThemeById(String id) {
+    return availableThemes.firstWhere(
+      (theme) => theme['id'] == id,
+      orElse: () => availableThemes[0],
+    );
+  }
+
+  bool get isDefaultTheme => _currentThemeId == 'default';
+
+  void validateThemeAccess(bool isPremium) {
+    if (!isPremium) {
+      if (!isDefaultTheme) {
+        setTheme('default');
+      }
+      if (_chatWallpaperPath != null) {
+        setChatWallpaper(null);
+      }
+    }
+  }
 }

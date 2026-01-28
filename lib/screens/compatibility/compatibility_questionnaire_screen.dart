@@ -53,141 +53,11 @@ class _CompatibilityQuestionnaireScreenState
             'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
       },
     ],
-    'Colombia': [
-      {
-        'name': 'Bogotá',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Medellín',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Cali',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Barranquilla',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Cartagena',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-    ],
-    'Perú': [
-      {
-        'name': 'Lima',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Arequipa',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Cusco',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Trujillo',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Chiclayo',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-    ],
-    'Argentina': [
-      {
-        'name': 'Buenos Aires',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Córdoba',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Rosario',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Mendoza',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'La Plata',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-    ],
-    'Chile': [
-      {
-        'name': 'Santiago',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Valparaíso',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Concepción',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Antofagasta',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Temuco',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-    ],
-    'México': [
-      {
-        'name': 'Ciudad de México',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Guadalajara',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Monterrey',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'Puebla',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-      {
-        'name': 'León',
-        'image':
-            'https://images.unsplash.com/photo-1578662956409-b3ab5380f83?ixlib=rb-4.0.3&ixid=M3wxLjAbSU&auto=format&fit=crop&w=800&q=80'
-      },
-    ],
+    'Colombia': [],
+    'Perú': [],
+    'Argentina': [],
+    'Chile': [],
+    'México': [],
   };
 
   final List<CompatibilityQuestion> _questions =
@@ -325,48 +195,90 @@ class _CompatibilityQuestionnaireScreenState
 
   Widget _buildCountryOption(String country, String flag) {
     final isSelected = _selectedCountry == country;
+    final isAvailable = country == 'Ecuador';
+
     return GestureDetector(
-      onTap: () => _selectCountry(country),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? const Color(0xFFE57373).withOpacity(0.2)
-              : const Color(0xFF1A1A1A),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color:
-                isSelected ? const Color(0xFFE57373) : const Color(0xFF333333),
-            width: 2,
-          ),
-        ),
-        child: Row(
-          children: [
-            Text(
-              flag,
-              style: const TextStyle(fontSize: 32),
+      onTap: () {
+        if (isAvailable) {
+          _selectCountry(country);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Próximamente disponible'),
+              duration: Duration(seconds: 1),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(
-                country,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey,
-                  fontSize: 18,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          );
+        }
+      },
+      child: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? const Color(0xFFE57373).withOpacity(0.2)
+                  : const Color(0xFF1A1A1A)
+                      .withOpacity(isAvailable ? 1.0 : 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isSelected
+                    ? const Color(0xFFE57373)
+                    : const Color(0xFF333333),
+                width: 2,
+              ),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  flag,
+                  style: const TextStyle(fontSize: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    country,
+                    style: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : Colors.grey.withOpacity(isAvailable ? 1.0 : 0.5),
+                      fontSize: 18,
+                      fontWeight:
+                          isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  const Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+              ],
+            ),
+          ),
+          if (!isAvailable)
+            Positioned(
+              right: 12,
+              top: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'Próximamente',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
-            if (isSelected)
-              const Icon(
-                Icons.check_circle,
-                color: Colors.white,
-                size: 24,
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
