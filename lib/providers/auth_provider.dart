@@ -7,12 +7,34 @@ class AuthProvider with ChangeNotifier {
   User? get currentUser => _supabase.auth.currentUser;
   bool get isAuthenticated => currentUser != null;
 
+  bool _isPremium = false;
+  bool get isPremium => _isPremium;
+
+  Future<void> checkPremiumStatus() async {
+    final user = currentUser;
+    if (user == null) return;
+    try {
+      final data = await _supabase
+          .from('profiles')
+          .select('is_premium')
+          .eq('id', user.id)
+          .single();
+      _isPremium = data['is_premium'] ?? false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error checking premium status: $e');
+    }
+  }
+
   Future<bool> signIn(String email, String password) async {
     try {
       final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: password,
       );
+      if (response.user != null) {
+        await checkPremiumStatus();
+      }
       notifyListeners();
       return response.user != null;
     } catch (e) {

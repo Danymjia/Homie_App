@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:roomie_app/services/auth_service.dart';
+
 import 'package:roomie_app/services/storage_service.dart';
 import 'package:roomie_app/widgets/bottom_nav_bar.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/auth_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -15,8 +17,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final StorageService _storageService = StorageService();
-  final AuthService _authService = AuthService();
-  bool _isLoggingOut = false;
+
   String? _profilePhotoUrl;
   bool _isLoading = true;
 
@@ -28,9 +29,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // Editable profile information
   String _aboutMe = '';
   String? _location;
+  String? _city;
+  String? _country;
   List<String> _lifestyleTags = [];
   List<String> _includedExpenses = ['WiFi', 'Water', 'Electricity'];
   List<String> _houseRules = ['No smoking inside', 'Quiet hours after 10 PM'];
+  List<Map<String, dynamic>> _userApartments = [];
   bool _hasApartments = false;
 
   // Controllers
@@ -61,6 +65,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           .eq('id', user.id)
           .single();
 
+      // Fetch user apartments
+      final apartmentsRes = await Supabase.instance.client
+          .from('apartments')
+          .select()
+          .eq('owner_id', user.id);
+
       if (mounted) {
         setState(() {
           _fullName = response['full_name'] ?? 'Usuario';
@@ -70,6 +80,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _lifestyleTags = List<String>.from(response['lifestyle_tags'] ?? []);
           _aboutMe = response['bio'] ?? '';
           _location = response['location'];
+          _city = response['city'];
+          _country = response['country'];
+          _country = response['country'];
+          _userApartments = List<Map<String, dynamic>>.from(apartmentsRes);
+          _hasApartments = _userApartments.isNotEmpty;
           _isLoading = false;
         });
         _aboutMeController.text = _aboutMe;
@@ -85,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showPhotoOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: Theme.of(context).cardColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -214,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: Theme.of(context).cardColor,
           title: const Text('Editar Preferencias',
               style: TextStyle(color: Colors.white)),
           content: SizedBox(
@@ -237,11 +252,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     });
                   },
                   backgroundColor: isSelected
-                      ? const Color(0xFFE57373)
-                      : const Color(0xFF2A2A2A),
+                      ? Theme.of(context).primaryColor
+                      : Theme.of(context).cardColor,
                   labelStyle:
                       TextStyle(color: isSelected ? Colors.white : Colors.grey),
-                  selectedColor: const Color(0xFFE57373),
+                  selectedColor: Theme.of(context).primaryColor,
                   checkmarkColor: Colors.white,
                 );
               }).toList(),
@@ -363,14 +378,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF333333)),
             ),
             child: Column(
               children: [
-                const Icon(Icons.lightbulb_outline,
-                    color: Color(0xFFE57373), size: 32),
+                Icon(Icons.lightbulb_outline,
+                    color: Theme.of(context).primaryColor, size: 32),
                 const SizedBox(height: 8),
                 const Text(
                   'No tienes preferencias agregadas',
@@ -423,13 +438,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: const Color(0xFF333333)),
             ),
             child: Column(
               children: [
-                const Icon(Icons.edit_note, color: Color(0xFFE57373), size: 32),
+                Icon(Icons.edit_note,
+                    color: Theme.of(context).primaryColor, size: 32),
                 const SizedBox(height: 8),
                 const Text(
                   'No has agregado información sobre ti',
@@ -453,82 +469,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         const SizedBox(height: 16),
-        // Logout button
-        ElevatedButton.icon(
-          onPressed: () => _showLogoutDialog(),
-          icon: const Icon(Icons.logout, color: Colors.white, size: 20),
-          label: const Text('Cerrar sesión'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFE57373),
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          'Cerrar sesión',
-          style: TextStyle(color: Colors.white, fontSize: 18),
-        ),
-        content: const Text(
-          '¿Estás seguro de que quieres cerrar sesión?',
-          style: TextStyle(color: Colors.white, fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: _isLoggingOut
-                ? null
-                : () async {
-                    // Guarda el contexto del scaffold ANTES de cerrar el diálogo
-                    final scaffoldContext = context;
-                    
-                    // Cierra el diálogo usando su propio contexto
-                    Navigator.pop(dialogContext);
-
-                    setState(() => _isLoggingOut = true);
-
-                    try {
-                      await _authService.signOut();
-
-                      // Usa el contexto del scaffold guardado
-                      if (mounted) {
-                        scaffoldContext.go('/login');
-                      }
-                    } catch (e) {
-                      print('Error al cerrar sesión: $e');
-                      if (mounted) {
-                        scaffoldContext.go('/login');
-                      }
-                    } finally {
-                      if (mounted) {
-                        setState(() => _isLoggingOut = false);
-                      }
-                    }
-                  },
-            child: const Text(
-              'Cerrar sesión',
-              style: TextStyle(color: Color(0xFFE57373)),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -602,7 +543,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    // Show existing apartments (placeholder for now)
+    // Show existing apartments
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -627,9 +568,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFFE57373).withOpacity(0.2),
                 ),
               ),
-              child: const Text(
-                'ACTIVO',
-                style: TextStyle(
+              child: Text(
+                '${_userApartments.length} ACTIVAS',
+                style: const TextStyle(
                   color: Color(0xFFE57373),
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
@@ -640,91 +581,104 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        Container(
-          height: 200,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            color: const Color(0xFF1A1A1A),
-          ),
-          child: Stack(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Image.network(
-                  'https://cf.bstatic.com/xdata/images/hotel/max1024x768/697485066.webp?k=a7685b9db668687c8f029981e28fca7f6094b3500041660120aa8cb0c3f29331&o=',
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.9),
-                    ],
-                  ),
+        ..._userApartments.map((apt) {
+          final images = apt['images'] as List?;
+          final firstImage = (images != null && images.isNotEmpty)
+              ? images[0]
+              : 'https://via.placeholder.com/400x300';
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              color: const Color(0xFF1A1A1A),
+            ),
+            child: Stack(
+              children: [
+                ClipRRect(
                   borderRadius: BorderRadius.circular(24),
-                ),
-              ),
-              Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Cozy Modern Loft',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  child: Image.network(
+                    firstImage.toString(),
+                    width: double.infinity,
+                    height: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[850],
+                      child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey)),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.payments,
-                          color: Colors.grey,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        const Text(
-                          '\$550/mo • San Luis',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                          ),
-                        ),
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.9),
                       ],
                     ),
-                  ],
-                ),
-              ),
-              Positioned(
-                top: 16,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.more_horiz,
-                    color: Colors.white,
-                    size: 20,
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        apt['title'] ?? 'Sin título',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.payments,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '\$${apt['price']}/mo • ${apt['city'] ?? 'Sin ciudad'}',
+                            style: const TextStyle(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
       ],
     );
   }
@@ -732,24 +686,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0B0B),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(top: 48, right: 16),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                shape: BoxShape.circle,
+          if (Provider.of<AuthProvider>(context).isPremium)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => context.push('/premium/themes'),
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1A1A1A),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.palette,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
               ),
-              child: const Icon(
-                Icons.settings,
-                color: Colors.white,
-                size: 20,
+            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => context.push('/settings'),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -777,7 +753,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: const Color(0xFF1A1A1A),
+                              color: Theme.of(context).cardColor,
                               width: 4,
                             ),
                           ),
@@ -834,9 +810,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         size: 14,
                       ),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Quito, Ecuador',
-                        style: TextStyle(
+                      Text(
+                        _city != null && _country != null
+                            ? '$_city, $_country'
+                            : 'Sin ubicación',
+                        style: const TextStyle(
                           color: Colors.grey,
                           fontSize: 14,
                         ),
@@ -898,76 +876,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
 
               // Premium section
-              GestureDetector(
-                onTap: () => context.push('/premium/features'),
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(0xFFE57373).withOpacity(0.2),
-                        const Color(0xFFE57373).withOpacity(0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              // Premium section
+              if (!Provider.of<AuthProvider>(context).isPremium) ...[
+                GestureDetector(
+                  onTap: () => context.push('/premium/features'),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFFE57373).withOpacity(0.2),
+                          const Color(0xFFE57373).withOpacity(0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFFE57373).withOpacity(0.3),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFE57373).withOpacity(0.3),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFE57373), Color(0xFFEF9A9A)],
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFE57373), Color(0xFFEF9A9A)],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          borderRadius: BorderRadius.circular(16),
+                          child: const Icon(
+                            Icons.workspace_premium,
+                            color: Colors.black,
+                            size: 28,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.workspace_premium,
-                          color: Colors.black,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Roomie+',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Roomie+',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Desbloquea funciones exclusivas',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
+                              const SizedBox(height: 4),
+                              Text(
+                                'Desbloquea funciones exclusivas',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 14,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios,
-                        color: Color(0xFFE57373),
-                        size: 20,
-                      ),
-                    ],
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Color(0xFFE57373),
+                          size: 20,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 32),
+                const SizedBox(height: 32),
+              ],
 
               // Lifestyle tags
               _buildLifestyleSection(),

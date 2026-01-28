@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
+import 'package:roomie_app/services/chat_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'dart:io';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/theme_provider.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -18,43 +24,20 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Mock messages - En producción vendría de Supabase
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'id': '1',
-      'text': 'Hola! Vi tu publicación sobre el departamento',
-      'senderId': 'other',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 2)),
-    },
-    {
-      'id': '2',
-      'text':
-          'Hola! Sí, todavía está disponible. ¿Te gustaría agendar una visita?',
-      'senderId': 'me',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 1)),
-    },
-    {
-      'id': '3',
-      'text': 'Eso sería perfecto! ¿Cuándo estarías disponible?',
-      'senderId': 'other',
-      'timestamp': DateTime.now().subtract(const Duration(minutes: 30)),
-    },
-  ];
-
-  void _sendMessage() {
-    if (_messageController.text.trim().isEmpty) return;
-
-    setState(() {
-      _messages.add({
-        'id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'text': _messageController.text.trim(),
-        'senderId': 'me',
-        'timestamp': DateTime.now(),
-      });
-    });
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
     _messageController.clear();
-    _scrollToBottom();
+
+    try {
+      await _chatService.sendMessage(widget.chatId, text);
+      _scrollToBottom();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al enviar: $e')),
+      );
+    }
   }
 
   void _scrollToBottom() {
@@ -76,8 +59,35 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
+  final ChatService _chatService = ChatService();
+  final String _currentUserId = Supabase.instance.client.auth.currentUser!.id;
+
+  Map<String, dynamic>? _otherUserProfile;
+  bool _isLoadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChatMetadata();
+  }
+
+  Future<void> _loadChatMetadata() async {
+    final metadata = await _chatService.getChatMetadata(widget.chatId);
+    if (mounted) {
+      setState(() {
+        _otherUserProfile = metadata;
+        _isLoadingProfile = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Default placeholder if loading or not found
+    final otherUserName = _otherUserProfile?['full_name'] ?? 'Usuario';
+    final otherUserPhoto = _otherUserProfile?['photo_url'];
+    final themeProvider = Provider.of<ThemeProvider>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
       appBar: AppBar(
@@ -87,61 +97,67 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => context.pop(),
         ),
-        title: Row(
-          children: [
-            Stack(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
+        title: _isLoadingProfile
+            ? const SizedBox(
+                height: 20,
+                width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2))
+            : Row(
+                children: [
+                  Stack(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                        ),
+                        child: ProfileAvatar(
+                          imageUrl: otherUserPhoto,
+                          name: otherUserName,
+                          size: 40,
+                          borderRadius: 50,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black, width: 2),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  child: ProfileAvatar(
-                    imageUrl: null, // Other user's profile photo
-                    name: 'Sarah Thompson',
-                    size: 40,
-                    borderRadius: 50,
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        otherUserName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Text(
+                        // Removed 'Online' hardcode, or keep as static 'Active' or remove
+                        'En línea',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Sarah Thompson',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  'Online',
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                ],
+              ),
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -151,17 +167,44 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
       body: Column(
         children: [
-          // Messages
+          // Messages Stream
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isMe = message['senderId'] == 'me';
-                return _buildMessageBubble(message, isMe);
+            child: Container(
+              decoration: themeProvider.chatWallpaperPath != null
+                  ? BoxDecoration(
+                      image: DecorationImage(
+                        image: FileImage(
+                            File(themeProvider.chatWallpaperPath!)),
+                        fit: BoxFit.cover,
+                        opacity: themeProvider.chatWallpaperOpacity,
+                      ),
+                    )
+                  : null,
+              child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: _chatService.getMessagesStream(widget.chatId),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final messages = snapshot.data!.reversed.toList();
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  reverse: true,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final message = messages[index];
+                    final isMe = message['sender_id'] == _currentUserId;
+                    return _buildMessageBubble(message, isMe);
+                  },
+                );
               },
+            ),
             ),
           ),
 
@@ -220,55 +263,50 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
       ),
     );
   }
+  
 
   Widget _buildMessageBubble(Map<String, dynamic> message, bool isMe) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMe) ...[
-            ProfileAvatar(
-              imageUrl: null, // Other user's profile photo
-              name: 'Sarah Thompson',
-              size: 32,
-              borderRadius: 50,
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isMe ? const Color(0xFFE57373) : const Color(0xFF171717),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(isMe ? 20 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 20),
-                ),
-              ),
-              child: Text(
-                message['text'],
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                ),
-              ),
-            ),
+    final time = DateTime.parse(message['created_at']).toLocal();
+    final timeString = '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isMe ? const Color(0xFFE57373) : const Color(0xFF1F1F1F),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(12),
+            topRight: const Radius.circular(12),
+            bottomLeft: Radius.circular(isMe ? 12 : 0),
+            bottomRight: Radius.circular(isMe ? 0 : 12),
           ),
-          if (isMe) ...[
-            const SizedBox(width: 8),
-            ProfileAvatar(
-              imageUrl: null, // Current user's profile photo
-              name: 'You',
-              size: 32,
-              borderRadius: 50,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              message['text'] ?? '',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              timeString,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 10,
+              ),
             ),
           ],
-        ],
+        ),
       ),
     );
   }

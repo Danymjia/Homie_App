@@ -12,15 +12,14 @@ class StorageService {
     if (userId == null) throw Exception('User not authenticated');
 
     try {
-      final fileName = 'profile_${userId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
+      final fileName =
+          '$userId/profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
       // Leer el archivo
       final fileBytes = await imageFile.readAsBytes();
-      
+
       // Subir a Supabase Storage
-      await _supabase.storage
-          .from('profile-photos')
-          .uploadBinary(
+      await _supabase.storage.from('profile-photos').uploadBinary(
             fileName,
             fileBytes,
             fileOptions: const FileOptions(
@@ -30,9 +29,8 @@ class StorageService {
           );
 
       // Obtener URL pública
-      final publicUrl = _supabase.storage
-          .from('profile-photos')
-          .getPublicUrl(fileName);
+      final publicUrl =
+          _supabase.storage.from('profile-photos').getPublicUrl(fileName);
 
       // Actualizar perfil con la URL de la foto
       await _supabase.from('profiles').update({
@@ -55,22 +53,21 @@ class StorageService {
 
     for (var i = 0; i < imageFiles.length; i++) {
       try {
-        final fileName = 'apartment_${userId}_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
+        final fileName =
+            '$userId/apt_${DateTime.now().millisecondsSinceEpoch}_$i.jpg';
         final fileBytes = await imageFiles[i].readAsBytes();
 
-        await _supabase.storage
-            .from('apartment-photos')
-            .uploadBinary(
+        await _supabase.storage.from('apartment-images').uploadBinary(
               fileName,
               fileBytes,
               fileOptions: const FileOptions(
                 contentType: 'image/jpeg',
+                upsert: true,
               ),
             );
 
-        final publicUrl = _supabase.storage
-            .from('apartment-photos')
-            .getPublicUrl(fileName);
+        final publicUrl =
+            _supabase.storage.from('apartment-images').getPublicUrl(fileName);
 
         photoUrls.add(publicUrl);
       } catch (e) {
@@ -117,18 +114,16 @@ class StorageService {
 
     try {
       // Listar archivos del usuario
-      final files = await _supabase.storage
-          .from('profile-photos')
-          .list();
+      final files = await _supabase.storage.from('profile-photos').list();
 
       // Filtrar archivos del usuario
-      final userFiles = files.where((file) => file.name.startsWith('profile_$userId')).toList();
+      final userFiles = files
+          .where((file) => file.name.startsWith('profile_$userId'))
+          .toList();
 
       // Eliminar cada archivo
       for (var file in userFiles) {
-        await _supabase.storage
-            .from('profile-photos')
-            .remove([file.name]);
+        await _supabase.storage.from('profile-photos').remove([file.name]);
       }
 
       // Actualizar perfil

@@ -81,7 +81,7 @@ class PremiumFeaturesScreen extends StatelessWidget {
 
                     // Title
                     const Text(
-                      'Novedad en Roomie+',
+                      'Novedad en Homie+',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 36,
@@ -145,16 +145,6 @@ class PremiumFeaturesScreen extends StatelessWidget {
                           title: 'Swipes Ilimitados',
                           description: 'No te pongas límites. Desliza todo lo que quieras sin restricciones.',
                           isNew: true,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildFeatureCard(
-                          icon: Icons.visibility,
-                          title: 'Ver quién te dio Like',
-                          description: 'Descubre quién está interesado en ser tu próximo roomie.',
-                          isNew: false,
-                          onTap: () {
-                            context.push('/premium/likes');
-                          },
                         ),
                         const SizedBox(height: 12),
                         _buildFeatureCard(

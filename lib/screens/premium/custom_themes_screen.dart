@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/theme_provider.dart';
+
 class CustomThemesScreen extends StatefulWidget {
   const CustomThemesScreen({super.key});
 
@@ -9,51 +14,23 @@ class CustomThemesScreen extends StatefulWidget {
 }
 
 class _CustomThemesScreenState extends State<CustomThemesScreen> {
-  String _selectedTheme = 'default';
+  Future<void> _pickWallpaper(ThemeProvider provider) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
-  final List<Map<String, dynamic>> _themes = [
-    {
-      'id': 'default',
-      'name': 'Clásico',
-      'primaryColor': const Color(0xFFE57373),
-      'gradient': [const Color(0xFFE57373), const Color(0xFFEF9A9A)],
-    },
-    {
-      'id': 'ocean',
-      'name': 'Océano',
-      'primaryColor': const Color(0xFF4FC3F7),
-      'gradient': [const Color(0xFF4FC3F7), const Color(0xFF81D4FA)],
-    },
-    {
-      'id': 'forest',
-      'name': 'Bosque',
-      'primaryColor': const Color(0xFF66BB6A),
-      'gradient': [const Color(0xFF66BB6A), const Color(0xFF81C784)],
-    },
-    {
-      'id': 'sunset',
-      'name': 'Atardecer',
-      'primaryColor': const Color(0xFFFF9800),
-      'gradient': [const Color(0xFFFF9800), const Color(0xFFFFB74D)],
-    },
-    {
-      'id': 'purple',
-      'name': 'Púrpura',
-      'primaryColor': const Color(0xFFBA68C8),
-      'gradient': [const Color(0xFFBA68C8), const Color(0xFFCE93D8)],
-    },
-    {
-      'id': 'dark',
-      'name': 'Oscuro',
-      'primaryColor': const Color(0xFF424242),
-      'gradient': [const Color(0xFF424242), const Color(0xFF616161)],
-    },
-  ];
+    if (image != null) {
+      provider.setChatWallpaper(image.path);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final themes = ThemeProvider.availableThemes;
+    final selectedTheme = themeProvider.currentThemeId;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -78,9 +55,9 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: _themes.firstWhere(
-                  (theme) => theme['id'] == _selectedTheme,
-                  orElse: () => _themes[0],
+                colors: themes.firstWhere(
+                  (theme) => theme['id'] == selectedTheme,
+                  orElse: () => themes[0],
                 )['gradient'] as List<Color>,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -134,15 +111,13 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.2,
               ),
-              itemCount: _themes.length,
+              itemCount: themes.length,
               itemBuilder: (context, index) {
-                final theme = _themes[index];
-                final isSelected = theme['id'] == _selectedTheme;
+                final theme = themes[index];
+                final isSelected = theme['id'] == selectedTheme;
                 return GestureDetector(
                   onTap: () {
-                    setState(() {
-                      _selectedTheme = theme['id'] as String;
-                    });
+                    themeProvider.setTheme(theme['id'] as String);
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -153,9 +128,7 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected
-                            ? Colors.white
-                            : Colors.transparent,
+                        color: isSelected ? Colors.white : Colors.transparent,
                         width: 3,
                       ),
                       boxShadow: isSelected
@@ -218,6 +191,136 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
             ),
           ),
 
+          // Intensity Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Intensidad del Color',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.opacity, color: Colors.grey, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Slider(
+                        value: themeProvider.themeColorOpacity,
+                        min: 0.0,
+                        max: 0.5,
+                        activeColor: themeProvider.themeData.primaryColor,
+                        inactiveColor: const Color(0xFF333333),
+                        onChanged: (val) {
+                          themeProvider.setThemeColorOpacity(val);
+                        },
+                      ),
+                    ),
+                    Text(
+                      '${(themeProvider.themeColorOpacity * 200).toInt()}%',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // Wallpaper Section
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Fondo de Chat',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _pickWallpaper(themeProvider),
+                      child: Container(
+                        width: 80,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(16),
+                          border:
+                              Border.all(color: Colors.white.withOpacity(0.1)),
+                          image: themeProvider.chatWallpaperPath != null
+                              ? DecorationImage(
+                                  image: FileImage(
+                                      File(themeProvider.chatWallpaperPath!)),
+                                  fit: BoxFit.cover,
+                                  opacity: themeProvider.chatWallpaperOpacity,
+                                )
+                              : null,
+                        ),
+                        child: themeProvider.chatWallpaperPath == null
+                            ? const Icon(Icons.add_photo_alternate,
+                                color: Colors.grey)
+                            : null,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Opacidad: ${(themeProvider.chatWallpaperOpacity * 100).toInt()}%',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                          Slider(
+                            value: themeProvider.chatWallpaperOpacity,
+                            min: 0.1,
+                            max: 1.0,
+                            activeColor: themeProvider.themeData.primaryColor,
+                            inactiveColor: const Color(0xFF333333),
+                            onChanged: (val) {
+                              themeProvider.setChatWallpaperOpacity(val);
+                            },
+                          ),
+                          if (themeProvider.chatWallpaperPath != null)
+                            TextButton.icon(
+                              onPressed: () =>
+                                  themeProvider.setChatWallpaper(null),
+                              icon: const Icon(Icons.delete,
+                                  size: 16, color: Colors.red),
+                              label: const Text('Eliminar fondo',
+                                  style: TextStyle(color: Colors.red)),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                alignment: Alignment.centerLeft,
+                              ),
+                            ),
+                          if (themeProvider.chatWallpaperPath == null)
+                            const Text(
+                              'Toca para elegir una imagen de tu galería',
+                              style:
+                                  TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
           // Apply button
           Container(
             padding: const EdgeInsets.all(24),
@@ -238,10 +341,10 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Guardar tema seleccionado
+                    // Guardar tema seleccionado (ya se guarda en Provider)
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Tema "${_themes.firstWhere((t) => t['id'] == _selectedTheme)['name']}" aplicado'),
+                      const SnackBar(
+                        content: Text('Tema aplicado'),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -254,7 +357,7 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                     ),
                   ),
                   child: const Text(
-                    'Aplicar Tema',
+                    'Guardar Cambios',
                     style: TextStyle(
                       color: Colors.black,
                       fontSize: 18,

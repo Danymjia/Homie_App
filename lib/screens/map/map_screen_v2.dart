@@ -7,6 +7,7 @@ import 'package:roomie_app/widgets/bottom_nav_bar.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geocoding/geocoding.dart';
 
 class MapScreenV2 extends StatefulWidget {
   const MapScreenV2({super.key});
@@ -22,12 +23,54 @@ class _MapScreenV2State extends State<MapScreenV2> {
   // User profile data
   String _userName = 'Usuario';
   String? _profilePhotoUrl;
+  String? _city;
+  String? _country;
+  List<Map<String, String>> _availableCities = [];
 
-  // Cities data for Ecuador
-  final Map<String, LatLng> _ecuadorCities = {
-    'Quito': const LatLng(-0.1807, -78.4678),
-    'Guayaquil': const LatLng(-2.1962, -79.8862),
-    'Cuenca': const LatLng(-2.9001, -79.0045),
+  // Cities data by country (Same as compatibility screen)
+  final Map<String, List<Map<String, String>>> _citiesByCountry = {
+    'Ecuador': [
+      {'name': 'Quito', 'image': ''},
+      {'name': 'Guayaquil', 'image': ''},
+      {'name': 'Cuenca', 'image': ''},
+      {'name': 'Ambato', 'image': ''},
+      {'name': 'Manta', 'image': ''},
+    ],
+    'Colombia': [
+      {'name': 'Bogotá', 'image': ''},
+      {'name': 'Medellín', 'image': ''},
+      {'name': 'Cali', 'image': ''},
+      {'name': 'Barranquilla', 'image': ''},
+      {'name': 'Cartagena', 'image': ''},
+    ],
+    'Perú': [
+      {'name': 'Lima', 'image': ''},
+      {'name': 'Arequipa', 'image': ''},
+      {'name': 'Cusco', 'image': ''},
+      {'name': 'Trujillo', 'image': ''},
+      {'name': 'Chiclayo', 'image': ''},
+    ],
+    'Argentina': [
+      {'name': 'Buenos Aires', 'image': ''},
+      {'name': 'Córdoba', 'image': ''},
+      {'name': 'Rosario', 'image': ''},
+      {'name': 'Mendoza', 'image': ''},
+      {'name': 'La Plata', 'image': ''},
+    ],
+    'Chile': [
+      {'name': 'Santiago', 'image': ''},
+      {'name': 'Valparaíso', 'image': ''},
+      {'name': 'Concepción', 'image': ''},
+      {'name': 'Antofagasta', 'image': ''},
+      {'name': 'Temuco', 'image': ''},
+    ],
+    'México': [
+      {'name': 'Ciudad de México', 'image': ''},
+      {'name': 'Guadalajara', 'image': ''},
+      {'name': 'Monterrey', 'image': ''},
+      {'name': 'Puebla', 'image': ''},
+      {'name': 'León', 'image': ''},
+    ],
   };
 
   @override
@@ -53,10 +96,34 @@ class _MapScreenV2State extends State<MapScreenV2> {
         setState(() {
           _userName = response['full_name'] ?? 'Usuario';
           _profilePhotoUrl = response['photo_url'];
+          _city = response['city'];
+          _country = response['country'];
+
+          if (_country != null) {
+            _availableCities = _citiesByCountry[_country] ?? [];
+          }
         });
+
+        if (_city != null && _country != null) {
+          _centerOnCity(_city!, _country!);
+        }
       }
     } catch (e) {
       debugPrint('Error loading profile data: $e');
+    }
+  }
+
+  Future<void> _centerOnCity(String city, String country) async {
+    try {
+      List<Location> locations = await locationFromAddress("$city, $country");
+      if (locations.isNotEmpty) {
+        _mapController.move(
+          LatLng(locations.first.latitude, locations.first.longitude),
+          12.0,
+        );
+      }
+    } catch (e) {
+      debugPrint("Error geocoding city: $e");
     }
   }
 
@@ -65,36 +132,74 @@ class _MapScreenV2State extends State<MapScreenV2> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          'Selecciona una ciudad',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          'Selecciona una ciudad en ${_country ?? "tu país"}',
+          style: const TextStyle(color: Colors.white),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _ecuadorCities.entries.map((entry) {
-            return ListTile(
-              title: Text(
-                entry.key,
-                style: const TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _moveToCity(entry.key, entry.value);
-              },
-            );
-          }).toList(),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _availableCities.length,
+            itemBuilder: (context, index) {
+              final city = _availableCities[index];
+              return ListTile(
+                title: Text(
+                  city['name']!,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _moveToCity(city['name']!);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  void _moveToCity(String cityName, LatLng coordinates) {
-    _mapController.move(coordinates, 12.0);
+  Future<void> _moveToCity(String cityName) async {
+    try {
+      String query = cityName;
+      if (_country != null) query += ", $_country";
+
+      List<Location> locations = await locationFromAddress(query);
+      if (locations.isNotEmpty) {
+        _mapController.move(
+          LatLng(locations.first.latitude, locations.first.longitude),
+          12.0,
+        );
+        setState(() => _city = cityName);
+      }
+    } catch (e) {
+      debugPrint("Error moving to city: $e");
+    }
   }
 
-  void _showEcuadorView() {
-    // Mostrar todo Ecuador
-    _mapController.move(const LatLng(-1.8314, -78.1834), 6.5);
+  Future<void> _showWorldView() async {
+    final locationProvider =
+        Provider.of<LocationProvider>(context, listen: false);
+
+    LatLng center = const LatLng(-0.1807, -78.4678); // Default
+
+    if (locationProvider.currentPosition != null) {
+      center = LatLng(
+        locationProvider.currentPosition!.latitude,
+        locationProvider.currentPosition!.longitude,
+      );
+    } else if (_city != null && _country != null) {
+      try {
+        List<Location> locations =
+            await locationFromAddress("$_city, $_country");
+        if (locations.isNotEmpty) {
+          center = LatLng(locations.first.latitude, locations.first.longitude);
+        }
+      } catch (_) {}
+    }
+
+    _mapController.move(center, 5.0);
   }
 
   Future<void> _loadLocation() async {
@@ -318,11 +423,13 @@ class _MapScreenV2State extends State<MapScreenV2> {
                         border:
                             Border.all(color: Colors.white.withOpacity(0.1)),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
                           Text(
-                            'Quito, Ecuador',
-                            style: TextStyle(
+                            _city != null && _country != null
+                                ? '$_city, $_country'
+                                : 'Seleccionar ubicación',
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -341,7 +448,7 @@ class _MapScreenV2State extends State<MapScreenV2> {
                 ),
                 const SizedBox(width: 12),
                 GestureDetector(
-                  onTap: _showEcuadorView,
+                  onTap: _showWorldView,
                   child: Container(
                     width: 40,
                     height: 40,

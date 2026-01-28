@@ -1,7 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:roomie_app/screens/auth/login_screen.dart';
-import 'package:roomie_app/screens/auth/register_screen.dart';
+
 import 'package:roomie_app/screens/auth/register_screen_v2.dart';
 import 'package:roomie_app/screens/auth/forgot_password_screen.dart';
 import 'package:roomie_app/screens/compatibility/compatibility_questionnaire_screen.dart';
@@ -17,6 +16,7 @@ import 'package:roomie_app/screens/premium/premium_features_screen.dart';
 import 'package:roomie_app/screens/premium/premium_plans_screen.dart';
 import 'package:roomie_app/screens/premium/who_liked_me_screen.dart';
 import 'package:roomie_app/screens/premium/custom_themes_screen.dart';
+import 'package:roomie_app/screens/settings/settings_screen.dart';
 import 'package:roomie_app/providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -26,10 +26,10 @@ class AppRouter {
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isAuthenticated = authProvider.isAuthenticated;
-      final isLoginRoute = state.matchedLocation == '/login' || 
-                          state.matchedLocation == '/register' ||
-                          state.matchedLocation == '/forgot-password';
-      
+      final isLoginRoute = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/register' ||
+          state.matchedLocation == '/forgot-password';
+
       if (!isAuthenticated && !isLoginRoute) {
         return '/login';
       }
@@ -96,8 +96,13 @@ class AppRouter {
       GoRoute(
         path: '/match/:userId',
         builder: (context, state) {
-          final userId = state.pathParameters['userId']!;
-          return MatchScreen(userId: userId);
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return MatchScreen(
+            chatId: extra['chatId'] ?? '',
+            myPhotoUrl: extra['myPhotoUrl'] ?? '',
+            otherPhotoUrl: extra['otherPhotoUrl'] ?? '',
+            otherName: extra['otherName'] ?? '',
+          );
         },
       ),
       GoRoute(
@@ -115,6 +120,10 @@ class AppRouter {
       GoRoute(
         path: '/premium/themes',
         builder: (context, state) => const CustomThemesScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
     ],
   );

@@ -3,11 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
 
 class MatchScreen extends StatelessWidget {
-  final String userId;
+  final String chatId;
+  final String myPhotoUrl;
+  final String otherPhotoUrl;
+  final String otherName;
 
   const MatchScreen({
     super.key,
-    required this.userId,
+    required this.chatId,
+    required this.myPhotoUrl,
+    required this.otherPhotoUrl,
+    required this.otherName,
   });
 
   @override
@@ -40,77 +46,78 @@ class MatchScreen extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  // Left profile
+                  // Left profile (Mine)
                   Positioned(
-                    left: MediaQuery.of(context).size.width * 0.15,
+                    left: MediaQuery.of(context).size.width * 0.1,
                     child: Container(
-                      width: 128,
-                      height: 128,
+                      width: 110,
+                      height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFFE5989B),
-                          width: 6,
+                          width: 4,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE5989B).withOpacity(0.6),
-                            blurRadius: 20,
-                            spreadRadius: 4,
+                            color: const Color(0xFFE5989B).withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 2,
                           ),
                         ],
                       ),
                       child: ProfileAvatar(
-                        imageUrl: null, // Current user's profile photo
-                        name: 'You',
-                        size: 128,
+                        imageUrl: myPhotoUrl.isNotEmpty ? myPhotoUrl : null,
+                        name: 'Yo',
+                        size: 110,
                         borderRadius: 50,
                       ),
                     ),
                   ),
-                  // Right profile
+                  // Right profile (Other)
                   Positioned(
-                    right: MediaQuery.of(context).size.width * 0.15,
+                    right: MediaQuery.of(context).size.width * 0.1,
                     child: Container(
-                      width: 128,
-                      height: 128,
+                      width: 110,
+                      height: 110,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: const Color(0xFFE5989B),
-                          width: 6,
+                          width: 4,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFE5989B).withOpacity(0.6),
-                            blurRadius: 20,
-                            spreadRadius: 4,
+                            color: const Color(0xFFE5989B).withOpacity(0.5),
+                            blurRadius: 15,
+                            spreadRadius: 2,
                           ),
                         ],
                       ),
                       child: ProfileAvatar(
-                        imageUrl: null, // Matched user's profile photo
-                        name: 'Matched User',
-                        size: 128,
+                        imageUrl:
+                            otherPhotoUrl.isNotEmpty ? otherPhotoUrl : null,
+                        name: otherName,
+                        size: 110,
                         borderRadius: 50,
                       ),
                     ),
                   ),
                   // Heart icon
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5989B),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: const Color(0xFF000000),
-                        width: 6,
+                        width: 4,
                       ),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFFE5989B).withOpacity(0.4),
-                          blurRadius: 20,
+                          blurRadius: 15,
                           spreadRadius: 0,
                         ),
                       ],
@@ -118,7 +125,7 @@ class MatchScreen extends StatelessWidget {
                     child: const Icon(
                       Icons.favorite,
                       color: Color(0xFF000000),
-                      size: 32,
+                      size: 28,
                     ),
                   ),
                 ],
@@ -127,10 +134,10 @@ class MatchScreen extends StatelessWidget {
               const SizedBox(height: 48),
 
               // Compatibility text
-              const Text(
-                'Tú y Sofia podrían ser excelentes roomies',
+              Text(
+                'Tú y $otherName podrían ser excelentes roomies',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 22,
                   fontWeight: FontWeight.w500,
@@ -139,7 +146,7 @@ class MatchScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Tienen 85% de compatibilidad en hábitos.',
+                'Tienen 85% de compatibilidad en hábitos.', // Could be dynamic later
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey,
@@ -158,8 +165,8 @@ class MatchScreen extends StatelessWidget {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Navegar al chat
-                        context.push('/chat/match_$userId');
+                        // Replace current route with Chat to avoid back stack loop
+                        context.pushReplacement('/chat/$chatId');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE5989B),
@@ -168,12 +175,12 @@ class MatchScreen extends StatelessWidget {
                         ),
                         elevation: 0,
                       ),
-                      child: Row(
+                      child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.chat_bubble, color: Colors.black),
-                          const SizedBox(width: 8),
-                          const Text(
+                          Icon(Icons.chat_bubble, color: Colors.black),
+                          SizedBox(width: 8),
+                          Text(
                             'Enviar Mensaje',
                             style: TextStyle(
                               color: Colors.black,
@@ -190,7 +197,7 @@ class MatchScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 48,
                     child: OutlinedButton(
-                      onPressed: () => context.go('/home'),
+                      onPressed: () => Navigator.pop(context), // Back to list
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Color(0xFF3F3F46)),
                         shape: RoundedRectangleBorder(

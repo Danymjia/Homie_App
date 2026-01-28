@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:roomie_app/models/user_profile_model.dart';
 import 'package:roomie_app/services/auth_service.dart';
-import 'package:roomie_app/services/storage_service.dart';
 
 class RegisterScreenV2 extends StatefulWidget {
   const RegisterScreenV2({super.key});
@@ -21,7 +19,6 @@ class _RegisterScreenV2State extends State<RegisterScreenV2> {
   final _confirmPasswordController = TextEditingController();
 
   final AuthService _authService = AuthService();
-  final StorageService _storageService = StorageService();
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -29,7 +26,6 @@ class _RegisterScreenV2State extends State<RegisterScreenV2> {
   bool _isLoading = false;
 
   UserType? _selectedUserType;
-  XFile? _verificationDocument;
 
   @override
   void dispose() {
@@ -60,22 +56,12 @@ class _RegisterScreenV2State extends State<RegisterScreenV2> {
     setState(() => _isLoading = true);
 
     try {
-      String? verificationUrl;
-
-      // Subir documento de verificación si existe
-      if (_verificationDocument != null) {
-        verificationUrl = await _authService.uploadVerificationDocument(
-          _verificationDocument!.path,
-        );
-      }
-
       final response = await _authService.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _nameController.text.trim(),
         age: int.tryParse(_ageController.text) ?? 0,
         userType: _selectedUserType!,
-        verificationDocumentUrl: verificationUrl,
       );
 
       if (response.user != null && mounted) {
@@ -101,13 +87,6 @@ class _RegisterScreenV2State extends State<RegisterScreenV2> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
-    }
-  }
-
-  Future<void> _pickVerificationDocument() async {
-    final file = await _storageService.pickImageFromGallery();
-    if (file != null) {
-      setState(() => _verificationDocument = file);
     }
   }
 
@@ -287,51 +266,6 @@ class _RegisterScreenV2State extends State<RegisterScreenV2> {
                                   !_obscureConfirmPassword;
                             });
                           },
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Verification Document
-                        const Text(
-                          'Documento de Verificación (Opcional)',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        GestureDetector(
-                          onTap: _pickVerificationDocument,
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF1C1C1E),
-                              borderRadius: BorderRadius.circular(12),
-                              border:
-                                  Border.all(color: const Color(0xFF3F3F46)),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.upload_file,
-                                  color: Color(0xFFEB6B6B),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    _verificationDocument?.name ??
-                                        'Subir documento (carnet, ID, etc.)',
-                                    style: TextStyle(
-                                      color: _verificationDocument != null
-                                          ? Colors.white
-                                          : Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
 
                         const SizedBox(height: 24),

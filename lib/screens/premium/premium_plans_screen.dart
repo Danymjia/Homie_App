@@ -15,37 +15,36 @@ class PremiumPlansScreen extends StatefulWidget {
 }
 
 class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
-  
   String _selectedPlan = 'monthly'; // 'monthly' or 'annual'
 
   Future<void> _handleSubscribe() async {
-  try {
-    final response = await Supabase.instance.client.functions.invoke(
-      'smart-action',
-      body: {'plan': _selectedPlan},
-    );
+    try {
+      final response = await Supabase.instance.client.functions.invoke(
+        'smart-action',
+        body: {'plan': _selectedPlan},
+      );
 
-    final checkoutUrl = response.data?['url'];
+      final checkoutUrl = response.data?['url'];
 
-    if (checkoutUrl == null) {
-      throw Exception('Stripe Checkout no disponible');
+      if (checkoutUrl == null) {
+        throw Exception('Stripe Checkout no disponible');
+      }
+
+      // 🔥 Abrir Stripe Checkout
+      await launchUrl(
+        Uri.parse(checkoutUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      print("Error detallado: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error al iniciar el pago'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    // 🔥 Abrir Stripe Checkout
-    await launchUrl(
-      Uri.parse(checkoutUrl),
-      mode: LaunchMode.externalApplication,
-    );
-  } catch (e) {
-    print("Error detallado: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Error al iniciar el pago'),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -54,38 +53,6 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Status bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '9:41',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      const Icon(Icons.signal_cellular_alt,
-                          color: Colors.white, size: 16),
-                      const SizedBox(width: 4),
-                      const Icon(Icons.wifi, color: Colors.white, size: 16),
-                      const SizedBox(width: 4),
-                      Transform.rotate(
-                        angle: 1.5708, // 90 degrees
-                        child: const Icon(Icons.battery_full,
-                            color: Colors.white, size: 16),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
             // Header
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -115,7 +82,7 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        '¡Prueba Roomie+ gratis!',
+                        '¡Prueba Homie+ gratis!',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 24,
@@ -219,7 +186,7 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
                                   Row(
                                     children: [
                                       Text(
-                                        'USD 9.99',
+                                        'USD 0.99',
                                         style: TextStyle(
                                           color: Colors.white.withOpacity(0.4),
                                           fontSize: 14,
@@ -239,16 +206,14 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 24),
-                                  _buildFeatureItem('Unlimited Swipes'),
+                                  _buildFeatureItem('Swipes Ilimitados'),
                                   const SizedBox(height: 12),
-                                  _buildFeatureItem('See who likes you'),
+                                  _buildFeatureItem('No Anuncios'),
                                   const SizedBox(height: 12),
-                                  _buildFeatureItem('No Ads'),
-                                  const SizedBox(height: 12),
-                                  _buildFeatureItem('Priority in Chat'),
+                                  _buildFeatureItem('Prioridad en Chat'),
                                   const SizedBox(height: 24),
                                   Text(
-                                    'Gratis los primeros 7 días, luego USD 9.99/mes',
+                                    'Gratis los primeros 7 días, luego USD 0.99/mes',
                                     style: TextStyle(
                                       color: Colors.white.withOpacity(0.4),
                                       fontSize: 12,

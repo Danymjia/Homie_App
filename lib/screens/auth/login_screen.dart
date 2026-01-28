@@ -135,19 +135,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       // Icon
                       Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: const Color(0xFF2A2A2A),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.home,
-                          color: Color(0xFFE57373),
-                          size: 48,
+                        width: 150,
+                        height: 150,
+                        child: Image.network(
+                          'https://ehqjsjpqpjwghhgodlzg.supabase.co/storage/v1/object/public/public-assets/Homie.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
 

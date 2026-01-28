@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:roomie_app/widgets/bottom_nav_bar.dart';
 import 'package:roomie_app/widgets/swipe_card.dart';
+import 'package:roomie_app/widgets/blurred_swipe_card.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:roomie_app/services/match_service.dart';
+import 'package:roomie_app/screens/premium/premium_features_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:provider/provider.dart';
+import 'package:roomie_app/providers/auth_provider.dart';
 
 class SwipeCardsScreen extends StatefulWidget {
   const SwipeCardsScreen({super.key});
@@ -13,55 +20,159 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
   final PageController _pageController = PageController();
   int _currentIndex = 0;
 
-  // Mock data - En producción vendría de Supabase
-  final List<Map<String, dynamic>> _apartments = [
-    {
-      'id': '1',
-      'price': 950,
-      'location': 'Modern Loft, San Francisco',
-      'rating': 4.8,
-      'images': ['https://cf.bstatic.com/xdata/images/hotel/max1024x768/697485066.webp?k=a7685b9db668687c8f029981e28fca7f6094b3500041660120aa8cb0c3f29331&o='],
-      'roommate': {
-        'name': 'Sarah',
-        'age': 24,
-        'profession': 'Software Engineer',
-        'photo': 'https://via.placeholder.com/100',
-      },
-      'description': 'Looking for a chill roommate for my extra bedroom. I\'m tidy, love weekend hikes...',
-      'amenities': ['Gigabit', 'Laundry', 'Pets'],
-      'isNew': true,
-    },
-    // Más apartamentos...
-  ];
+  final SupabaseClient _supabase = Supabase.instance.client;
+  final MatchService _matchService = MatchService();
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  List<Map<String, dynamic>> _apartments = [];
+  bool _isLoading = true;
+  int _dailySwipes = 0;
+  static const int _maxDailySwipes = 5;
+
+  void initState() {
+    super.initState();
+    _checkPermissions();
+    _loadApartments();
+    // Ensure premium status is up to date
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<AuthProvider>(context, listen: false).checkPremiumStatus();
+    });
+  }
+
+  Future<void> _checkPermissions() async {
+    await [
+      Permission.camera,
+      Permission.location,
+    ].request();
+  }
+
+  Future<void> _loadApartments() async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) return;
+
+      // 1. Get IDs of already swiped apartments
+      final swipedIds = await _matchService.getSwipedApartmentIds();
+
+      // 2. Counts daily swipes
+      final count = await _matchService.getDailySwipeCount();
+
+      // 3. Fetch candidates (excluding swiped)
+      // 3. Fetch candidates (excluding swiped)
+      final response = await _supabase
+          .from('apartments')
+          .select('*, profiles:owner_id(full_name, photo_url)')
+          .neq('owner_id', user.id);
+
+      final candidates = List<Map<String, dynamic>>.from(response);
+
+      // Filter out swiped
+      final filtered =
+          candidates.where((apt) => !swipedIds.contains(apt['id'])).toList();
+
+      if (mounted) {
+        setState(() {
+          _apartments = filtered;
+          _dailySwipes = count;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading apartments: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _checkLimitAndSwipe(String type) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isPremium = authProvider.isPremium;
+
+    if (!isPremium && _dailySwipes >= _maxDailySwipes) {
+      // Limit reached, UI handles it.
+      return;
+    }
+
+    final apt = _apartments[_currentIndex];
+
+    // Optimistic UI update
+    // 1. Record swipe in background
+    _matchService.recordSwipe(
+      apartmentId: apt['id'],
+      ownerId: apt['owner_id'],
+      type: type,
+    );
+
+    // 2. Increment local count
+    setState(() {
+      _dailySwipes++;
+    });
+
+    // 3. Show feedback
+    if (type == 'like') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('¡Te ha gustado!'),
+            duration: Duration(milliseconds: 300)),
+      );
+    }
+
+    // 4. Move to next card
+    if (_currentIndex < _apartments.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } else {
+      // Remove the last card visually if needed or show empty state
+      setState(() {
+        // This triggers the empty state rebuild if list becomes empty
+        _apartments.removeAt(_currentIndex);
+        if (_currentIndex > 0) _currentIndex--;
+      });
+    }
   }
 
   void _onSwipeLeft() {
-    if (_currentIndex < _apartments.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    _checkLimitAndSwipe('dislike');
   }
 
-  void _onSwipeRight(String apartmentId) {
-    // Aquí se manejaría el like/match
-    // Por ahora solo avanzamos a la siguiente tarjeta
-    if (_currentIndex < _apartments.length - 1) {
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+  Future<void> _onSwipeRight(String apartmentId) async {
+    _checkLimitAndSwipe('like');
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0B0B0C),
+        body: Center(child: CircularProgressIndicator()),
+        bottomNavigationBar: BottomNavBar(currentIndex: 2),
+      );
+    }
+
+    if (_apartments.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF0B0B0C),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.home_work_outlined, size: 64, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                'No hay publicaciones disponibles',
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ],
+          ),
+        ),
+        bottomNavigationBar: BottomNavBar(currentIndex: 2),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0B0B0C),
       body: SafeArea(
@@ -92,7 +203,7 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Encuentra tu compañero ideal',
+                        'Habitaciones disponibles',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 20,
@@ -119,131 +230,139 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
               ),
             ),
 
-            // Cards
+            // Cards or Blurred State
             Expanded(
-              child: Stack(
-                children: [
-                  // Background cards
-                  if (_currentIndex < _apartments.length - 1)
-                    Positioned(
-                      top: 32,
-                      left: 24,
-                      right: 24,
-                      bottom: 120,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF27272A),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        transform: Matrix4.identity()
-                          ..scale(0.95)
-                          ..translate(0.0, 8.0),
+              child: (!Provider.of<AuthProvider>(context).isPremium &&
+                      _dailySwipes >= _maxDailySwipes)
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      child: BlurredSwipeCard(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PremiumFeaturesScreen(),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  if (_currentIndex < _apartments.length - 2)
-                    Positioned(
-                      top: 40,
-                      left: 32,
-                      right: 32,
-                      bottom: 120,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF27272A),
-                          borderRadius: BorderRadius.circular(28),
-                          border: Border.all(color: Colors.white.withOpacity(0.05)),
-                        ),
-                        transform: Matrix4.identity()
-                          ..scale(0.90)
-                          ..translate(0.0, 16.0),
-                      ),
-                    ),
+                    )
+                  : Stack(
+                      children: [
+                        PageView.builder(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: (index) {
+                            setState(() {
+                              _currentIndex = index;
+                            });
+                          },
+                          itemCount: _apartments.length,
+                          itemBuilder: (context, index) {
+                            final apt = _apartments[index];
+                            // Adapt Supabase data to SwipeCard widget expectation
+                            // Extract profile data safely
+                            final profileData = apt['profiles'];
+                            final String ownerName = (profileData != null)
+                                ? (profileData['full_name'] ?? 'Usuario')
+                                : 'Usuario';
+                            final String? ownerPhoto = (profileData != null)
+                                ? profileData['photo_url']
+                                : null;
 
-                  // Main card
-                  PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentIndex = index;
-                      });
-                    },
-                    itemCount: _apartments.length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: SwipeCard(
-                          apartment: _apartments[index],
-                          onSwipeLeft: _onSwipeLeft,
-                          onSwipeRight: () => _onSwipeRight(_apartments[index]['id']),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+                            final mappedApt = {
+                              'id': apt['id'],
+                              'price': apt['price'],
+                              'location': apt['city'] ??
+                                  apt['address'] ??
+                                  'Ubicación desconocida',
+                              'rating': 0.0,
+                              'images': apt['images'] is List
+                                  ? apt['images']
+                                  : (apt['image_url'] != null
+                                      ? [apt['image_url']]
+                                      : []),
+                              'roommate': {
+                                'name': ownerName,
+                                'photo': ownerPhoto
+                              },
+                              'description': apt['description'],
+                              'amenities': apt['amenities'] ?? [],
+                              'rules': apt['rules'] ?? [],
+                              'isNew': false,
+                            };
 
-            // Action buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Dislike button
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF27272A),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.close, size: 32, color: Colors.red),
-                      onPressed: _onSwipeLeft,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  // Super like button
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF27272A),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
-                    ),
-                    child: const IconButton(
-                      icon: Icon(Icons.star, size: 24, color: Colors.amber),
-                      onPressed: null,
-                    ),
-                  ),
-                  const SizedBox(width: 24),
-                  // Like button
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4D67), Color(0xFFE91E63)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF4D67).withOpacity(0.4),
-                          blurRadius: 15,
-                          spreadRadius: 0,
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              child: SwipeCard(
+                                apartment: mappedApt,
+                                onSwipeLeft: _onSwipeLeft,
+                                onSwipeRight: () =>
+                                    _onSwipeRight(apt['id'].toString()),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.favorite, size: 32, color: Colors.white),
-                      onPressed: () => _onSwipeRight(_apartments[_currentIndex]['id']),
-                    ),
-                  ),
-                ],
-              ),
             ),
+
+            // Action buttons (Only if not limited)
+            if (Provider.of<AuthProvider>(context).isPremium ||
+                _dailySwipes < _maxDailySwipes)
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF27272A),
+                        shape: BoxShape.circle,
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.1)),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close,
+                            size: 32, color: Colors.red),
+                        onPressed: _onSwipeLeft,
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF4D67), Color(0xFFE91E63)],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF4D67).withOpacity(0.4),
+                            blurRadius: 15,
+                            spreadRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.favorite,
+                            size: 32, color: Colors.white),
+                        onPressed: () => _onSwipeRight(
+                            _apartments[_currentIndex]['id'].toString()),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (!Provider.of<AuthProvider>(context).isPremium &&
+                _dailySwipes >= _maxDailySwipes)
+              const SizedBox(height: 96), // Spacer for bottom layout
           ],
         ),
       ),
