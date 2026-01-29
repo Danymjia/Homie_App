@@ -13,7 +13,9 @@ import 'package:roomie_app/services/match_service.dart';
 import 'package:roomie_app/screens/home/apartment_detail_screen.dart';
 
 class MapScreenV2 extends StatefulWidget {
-  const MapScreenV2({super.key});
+  final List<Map<String, dynamic>>? initialApartments;
+
+  const MapScreenV2({super.key, this.initialApartments});
 
   @override
   State<MapScreenV2> createState() => _MapScreenV2State();
@@ -47,14 +49,74 @@ class _MapScreenV2State extends State<MapScreenV2> {
     'Chile': [],
     'México': [],
   };
-
   @override
   void initState() {
     super.initState();
     _loadProfileData();
-    _loadLocation();
-    _loadApartments();
+
+    // If we have specific apartments passed, focus on them and don't load user location/others
+    if (widget.initialApartments != null &&
+        widget.initialApartments!.isNotEmpty) {
+      _loadInitialApartments();
+    } else {
+      _loadLocation();
+      _loadApartments();
+    }
   }
+
+  void _loadInitialApartments() {
+    // Determine center from first apartment
+    final first = widget.initialApartments!.first;
+    final lat = first['lat'] as double? ?? 0.0;
+    final lng = first['lng'] as double? ?? 0.0;
+
+    if (lat != 0 && lng != 0) {
+      // Move map logic will happen after built or we can try immediately if controller ready (but safety first)
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(LatLng(lat, lng), 15.0);
+      });
+    }
+
+    setState(() {
+      _visibleApartments = widget.initialApartments!;
+      _markers.clear();
+      for (var apt in _visibleApartments) {
+        final alat = apt['lat'] as double? ?? 0.0;
+        final alng = apt['lng'] as double? ?? 0.0;
+
+        if (alat != 0 && alng != 0) {
+          _markers.add(
+            Marker(
+              point: LatLng(alat, alng),
+              width: 50,
+              height: 50,
+              child: GestureDetector(
+                onTap: () => _showApartmentDetails(apt),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4B63),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(Icons.home_rounded,
+                      color: Colors.white, size: 28),
+                ),
+              ),
+            ),
+          );
+        }
+      }
+    });
+  }
+
+// ...
 
   Future<void> _loadProfileData() async {
     try {

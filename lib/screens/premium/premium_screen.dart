@@ -55,7 +55,7 @@ class PremiumScreen extends StatelessWidget {
 
                   // Title
                   const Text(
-                    'Novedad en\nRoomie+',
+                    'Novedad en\nHomie+',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 40,

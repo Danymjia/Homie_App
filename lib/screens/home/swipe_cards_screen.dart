@@ -9,7 +9,6 @@ import 'package:provider/provider.dart';
 import 'package:roomie_app/providers/auth_provider.dart';
 import 'package:roomie_app/services/ad_service.dart';
 import 'package:roomie_app/services/realtime_service.dart';
-import 'package:go_router/go_router.dart';
 import 'package:roomie_app/providers/theme_provider.dart';
 
 class SwipeCardsScreen extends StatefulWidget {
@@ -167,10 +166,6 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final currentTheme =
-        themeProvider.getThemeById(themeProvider.currentThemeId);
-
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: Color(0xFF0B0B0C),
@@ -241,10 +236,6 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
                           ),
                         ],
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.tune, color: Colors.white),
-                        onPressed: () {},
-                      ),
                     ],
                   ),
                 ),
@@ -255,22 +246,41 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
                           ? _buildNoMoreCards()
                           : _buildCardsStack(),
                 ),
+                // Swipe Guide
+                if (!_isLoading && _apartments.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.arrow_back,
+                            color: Colors.white.withOpacity(0.5), size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Desliza izq: Descartar',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12),
+                        ),
+                        const SizedBox(width: 16),
+                        Container(
+                            width: 1,
+                            height: 12,
+                            color: Colors.white.withOpacity(0.3)),
+                        const SizedBox(width: 16),
+                        Text(
+                          'Desliza der: Me gusta',
+                          style: TextStyle(
+                              color: Colors.white.withOpacity(0.5),
+                              fontSize: 12),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.arrow_forward,
+                            color: Colors.white.withOpacity(0.5), size: 16),
+                      ],
+                    ),
+                  ),
               ],
-            ),
-          ),
-          // Map Button (Floating) - Themed
-          Positioned(
-            bottom: 100, // Above bottom nav
-            right: 20,
-            child: FloatingActionButton(
-              heroTag: 'map_btn',
-              onPressed: () {
-                context.push('/map', extra: _apartments);
-              },
-              backgroundColor: themeProvider.isDefaultTheme
-                  ? const Color(0xFFE57373)
-                  : (currentTheme['primaryColor'] as Color),
-              child: const Icon(Icons.map, color: Colors.white),
             ),
           ),
         ],

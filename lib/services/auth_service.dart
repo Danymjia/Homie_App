@@ -78,6 +78,8 @@ class AuthService {
           'verification_document_url': verificationDocumentUrl,
           'is_verified': false, // Requiere verificación manual
         },
+        emailRedirectTo:
+            'https://zingy-lollipop-297284.netlify.app/account-confirmed',
       );
 
       if (response.user != null) {
@@ -139,7 +141,7 @@ class AuthService {
     // Apuntar a la URL de la web desplegada
     // IMPORTANTE: Asegúrate que esta URL esté en la lista de Redirect URLs de Supabase
     const webRedirectUrl =
-        'https://elaborate-stardust-b3cead.netlify.app/reset-password';
+        'https://zingy-lollipop-297284.netlify.app/reset-password';
     await _supabase.auth.resetPasswordForEmail(
       email,
       redirectTo: webRedirectUrl,
@@ -169,7 +171,7 @@ class AuthService {
     int age,
     UserType userType,
   ) async {
-    await _supabase.from('profiles').insert({
+    await _supabase.from('profiles').upsert({
       'id': user.id,
       'email': user.email,
       'full_name': fullName,

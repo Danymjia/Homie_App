@@ -1,41 +1,53 @@
-# Roomie App
+# Homie App
 
-**Roomie App** es una aplicación móvil moderna desarrollada en Flutter diseñada para facilitar la búsqueda de compañeros de cuarto y departamentos compartidos. Con un enfoque en la seguridad, la facilidad de uso y la conexión en tiempo real, Roomie App ofrece una experiencia premium para encontrar tu próximo hogar.
+**Homie** es una aplicación móvil moderna desarrollada en Flutter diseñada para facilitar la búsqueda de compañeros de cuarto y departamentos compartidos. Con un enfoque en la seguridad, la facilidad de uso y la conexión en tiempo real, Homie ofrece una experiencia premium para encontrar tu próximo hogar.
 
 ## 📱 Características Principales
 
 ### 🗺️ Descubrimiento Inteligente
 
 - **Mapa Interactivo**: Explora departamentos cercanos con marcadores visuales personalizados.
-- **Daily Discovery**: Límite diario de 5 nuevas habitaciones en el mapa para fomentar la revisión detallada.
-- **Swipe Cards**: Interfaz intuitiva para dar "Like" o "Reject" a posibles candidatos.
+- **Swipe Cards**: Interfaz intuitiva para dar "Like" o "Reject" a posibles candidatos, ahora con guías visuales de uso.
+- **Daily Discovery**: Límite diario de visualizaciones para fomentar interacciones de calidad.
 
 ### 🤝 Conexiones y Match
 
 - **Sistema de Match**: Conecta solo cuando el interés es mutuo.
-- **Solicitudes Enviadas**: Gestiona y cancela tus likes enviados antes de que sean aceptados.
-- **Chat en Tiempo Real**: Mensajería instantánea integrada para coordinar visitas y entrevistas.
-- **Notificaciones Push**: Alertas inmediatas cuando recibes un Like o haces un Match.
+- **Cálculo de Compatibilidad**: Algoritmo que analiza intereses compartidos para mostrar un porcentaje de compatibilidad en cada Match.
+- **Chat en Tiempo Real**: Mensajería instantánea integrada para coordinar visitas.
+- **Notificaciones Push**: Alertas inmediatas para nuevos Likes y Matches.
 
-### 💎 Experiencia Premium
+### 💎 Experiencia Premium (Homie+)
 
-- **Membresía**: Acceso a funciones exclusivas y límites de visualización ampliados.
+- **Membresía**: Acceso ilimitado a visualizaciones y funciones exclusivas.
+- **Gestión de Suscripción**: Control total sobre tu plan, incluyendo cancelación programada al final del periodo de facturación.
+- **Temas Personalizados**: 6 temas exclusivos con controles de opacidad para personalizar la apariencia de la app.
 - **Sin Publicidad**: Navegación fluida sin interrupciones.
-- **Temas Personalizados**: Adapta la app a tu estilo preferido.
+
+### ⚙️ Configuración y Soporte
+
+- **Módulo de Ajustes**: Nueva sección centralizada para gestionar tu cuenta.
+- **Soporte Integrado**: Herramientas para contactar soporte, reportar usuarios o problemas técnicos.
+- **Seguridad**: Opciones claras para cerrar sesión y gestionar la privacidad.
 
 ### 👤 Gestión de Perfil
 
-- **Perfil Completo**: biografía, etiquetas de estilo de vida, edad, profesión.
-- **Mis Habitaciones**: Publica tus propios espacios. Visualiza tus 2 principales habitaciones con opción de expandir toda tu lista.
+- **Perfil Completo**: Biografía editable, etiquetas de estilo de vida y fotos.
+- **Mis Habitaciones**: Publica y gestiona tus propios espacios con límites según tu plan.
 - **Verificación**: Filtros de usuarios y reportes para mantener la comunidad segura.
 
 ## 🛠️ Tecnologías
 
 - **Frontend**: Flutter (Dart)
-- **Backend**: Supabase (Auth, Database, Realtime, Storage)
+- **Backend**: Supabase
+  - **Auth**: Autenticación segura.
+  - **Database**: PostgreSQL con Row Level Security.
+  - **Storage**: Almacenamiento de imágenes.
+  - **Edge Functions**: Lógica de servidor para gestión de suscripciones (Stripe).
 - **Mapas**: `flutter_map`
-- **Pagos**: Stripe (integrado para suscripciones Premium)
-- **Notificaciones**: `flutter_local_notifications` + Supabase Realtime
+- **Pagos**: Stripe (Suscripciones recurrentes).
+- **Gestión de Estado**: `Provider`.
+- **Enrutamiento**: `go_router`.
 
 ## 🚀 Instalación y Configuración
 
@@ -43,15 +55,16 @@
 
 - Flutter SDK >=3.0.0
 - Cuenta de Supabase
-- Cuenta de Stripe (para pagos)
+- Cuenta de Stripe
+- Supabase CLI (para desplegar Edge Functions)
 
 ### Pasos
 
 1.  **Clonar el repositorio**
 
     ```bash
-    git clone https://github.com/tu-usuario/roomie-app.git
-    cd roomie_app
+    git clone https://github.com/tu-usuario/homie-app.git
+    cd homie_app
     ```
 
 2.  **Instalar dependencias**
@@ -61,26 +74,32 @@
     ```
 
 3.  **Configuración de Supabase**
-    Crea un proyecto en Supabase y ejecuta el script de base de datos incluido en `SUPABASE_SCHEMA.sql` para configurar todas las tablas y políticas de seguridad necesarias.
+    - Ejecuta el script `SUPABASE_SCHEMA.sql` en tu proyecto de Supabase.
+    - Despliega las Edge Functions:
+      ```bash
+      supabase functions deploy cancel-subscription --no-verify-jwt
+      ```
 
-    Actualiza las credenciales en `lib/config/supabase_config.dart` (o donde definas tus claves):
+4.  **Variables de Entorno**
+    Crea un archivo `.env` o configura tus claves en `lib/config/env.dart` (según tu implementación):
 
     ```dart
     const supabaseUrl = 'TU_URL';
     const supabaseKey = 'TU_ANON_KEY';
     ```
 
-4.  **Ejecutar la App**
+5.  **Ejecutar la App**
     ```bash
     flutter run
     ```
 
 ## 📂 Estructura del Proyecto
 
-- `lib/screens`: Vistas principales (Home, Map, Chat, Profile).
-- `lib/services`: Lógica de negocio y comunicación con APIs (MatchService, RealtimeService, NotificationService).
-- `lib/providers`: Gestión de estado (AuthProvider, ThemeProvider).
-- `lib/widgets`: Componentes reutilizables UI.
+- `lib/screens`: Vistas principales (Home, Map, Chat, Profile, Settings, Premium).
+- `lib/services`: Lógica de negocio y comunicación (AuthService, MatchService, StorageService).
+- `lib/providers`: Gestión de estado global (AuthProvider, ThemeProvider).
+- `lib/widgets`: Componentes UI reutilizables.
+- `supabase/functions`: Código TypeScript para Edge Functions.
 
 ## 📄 Licencia
 

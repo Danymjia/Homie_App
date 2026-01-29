@@ -265,42 +265,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: TextStyle(color: Colors.white)),
           content: SizedBox(
             width: double.maxFinite,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: suggestions.map((suggestion) {
-                final isSelected = _lifestyleTags.contains(suggestion);
-                return FilterChip(
-                  label: Text(suggestion),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        if (_lifestyleTags.length >= 10) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Máximo 10 intereses permitidos'),
-                              backgroundColor: Colors.red,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          return;
+            child: SingleChildScrollView(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: suggestions.map((suggestion) {
+                  final isSelected = _lifestyleTags.contains(suggestion);
+                  return FilterChip(
+                    label: Text(suggestion),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          if (_lifestyleTags.length >= 10) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Máximo 10 intereses permitidos'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return;
+                          }
+                          _lifestyleTags.add(suggestion);
+                        } else {
+                          _lifestyleTags.remove(suggestion);
                         }
-                        _lifestyleTags.add(suggestion);
-                      } else {
-                        _lifestyleTags.remove(suggestion);
-                      }
-                    });
-                  },
-                  backgroundColor: isSelected
-                      ? Theme.of(context).primaryColor
-                      : Theme.of(context).cardColor,
-                  labelStyle:
-                      TextStyle(color: isSelected ? Colors.white : Colors.grey),
-                  selectedColor: Theme.of(context).primaryColor,
-                  checkmarkColor: Colors.white,
-                );
-              }).toList(),
+                      });
+                    },
+                    backgroundColor: isSelected
+                        ? Theme.of(context).primaryColor
+                        : Theme.of(context).cardColor,
+                    labelStyle: TextStyle(
+                        color: isSelected ? Colors.white : Colors.grey),
+                    selectedColor: Theme.of(context).primaryColor,
+                    checkmarkColor: Colors.white,
+                  );
+                }).toList(),
+              ),
             ),
           ),
           actions: [
@@ -1066,7 +1068,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Text(
-                                'Roomie+',
+                                'Homie+',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 20,

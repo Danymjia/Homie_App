@@ -62,6 +62,17 @@ class ApartmentService {
     }
   }
 
+  // Marcar apartamento como ocupado (is_active = false)
+  Future<void> markAsOccupied(String apartmentId) async {
+    try {
+      await _supabase
+          .from('apartments')
+          .update({'is_active': false}).eq('id', apartmentId);
+    } catch (e) {
+      throw Exception('Error al actualizar estado del departamento: $e');
+    }
+  }
+
   // Future<List<Map<String, dynamic>>> getApartments() async { ... }
   // (Home screen does this directly currently, can refactor later)
 }

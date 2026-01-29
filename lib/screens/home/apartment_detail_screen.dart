@@ -6,8 +6,13 @@ import 'package:roomie_app/services/ad_service.dart';
 
 class ApartmentDetailScreen extends StatefulWidget {
   final Map<String, dynamic> apartment;
+  final bool isViewOnly;
 
-  const ApartmentDetailScreen({super.key, required this.apartment});
+  const ApartmentDetailScreen({
+    super.key,
+    required this.apartment,
+    this.isViewOnly = false,
+  });
 
   @override
   State<ApartmentDetailScreen> createState() => _ApartmentDetailScreenState();
@@ -224,32 +229,34 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
           ),
 
           // Floating Action Buttons (Sticky Bottom)
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Dislike Button
-                FloatingActionButton(
-                  heroTag: 'dislike_detail',
-                  onPressed: () => _handleSwipe('dislike'),
-                  backgroundColor: const Color(0xFF2C2C2E),
-                  child: const Icon(Icons.close, color: Colors.white, size: 30),
-                ),
-                const SizedBox(width: 40),
-                // Like Button
-                FloatingActionButton(
-                  heroTag: 'like_detail',
-                  onPressed: () => _handleSwipe('like'),
-                  backgroundColor: const Color(0xFFFF4B63),
-                  child:
-                      const Icon(Icons.favorite, color: Colors.white, size: 30),
-                ),
-              ],
+          if (!widget.isViewOnly)
+            Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Dislike Button
+                  FloatingActionButton(
+                    heroTag: 'dislike_detail',
+                    onPressed: () => _handleSwipe('dislike'),
+                    backgroundColor: const Color(0xFF2C2C2E),
+                    child:
+                        const Icon(Icons.close, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 40),
+                  // Like Button
+                  FloatingActionButton(
+                    heroTag: 'like_detail',
+                    onPressed: () => _handleSwipe('like'),
+                    backgroundColor: const Color(0xFFFF4B63),
+                    child: const Icon(Icons.favorite,
+                        color: Colors.white, size: 30),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

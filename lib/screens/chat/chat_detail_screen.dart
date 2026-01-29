@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:roomie_app/services/apartment_service.dart';
 import 'package:roomie_app/widgets/profile_avatar.dart';
 import 'package:roomie_app/services/chat_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 import 'package:roomie_app/providers/theme_provider.dart';
+import 'package:roomie_app/models/apartment_model.dart';
 
 class ChatDetailScreen extends StatefulWidget {
   final String chatId;
@@ -24,6 +26,56 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  final ChatService _chatService = ChatService();
+  final ApartmentService _apartmentService = ApartmentService();
+  final String _currentUserId = Supabase.instance.client.auth.currentUser!.id;
+  final SupabaseClient _supabase = Supabase.instance.client;
+
+  Map<String, dynamic>? _otherUserProfile;
+  ApartmentModel? _apartment;
+  bool _isLoadingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadChatMetadata();
+  }
+
+  Future<void> _loadChatMetadata() async {
+    // 1. Get other user info
+    final metadata = await _chatService.getChatMetadata(widget.chatId);
+
+    // 2. Get apartment info from chat
+    ApartmentModel? apartment;
+    try {
+      final chatRes = await _supabase
+          .from('chats')
+          .select('apartment_id')
+          .eq('id', widget.chatId)
+          .single();
+
+      final apartmentId = chatRes['apartment_id'];
+      if (apartmentId != null) {
+        final aptRes = await _supabase
+            .from('apartments')
+            .select()
+            .eq('id', apartmentId)
+            .single();
+        apartment = ApartmentModel.fromJson(aptRes);
+      }
+    } catch (e) {
+      debugPrint('Error getting apartment info: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _otherUserProfile = metadata;
+        _apartment = apartment;
+        _isLoadingProfile = false;
+      });
+    }
+  }
+
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -36,6 +88,57 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al enviar: $e')),
+      );
+    }
+  }
+
+  Future<void> _handleBeRoomies() async {
+    if (_apartment == null) return;
+
+    try {
+      // 1. Mark as occupied
+      await _apartmentService.markAsOccupied(_apartment!.id);
+
+      // 2. Show dialog
+      if (!mounted) return;
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1C1C1E),
+          title: const Text('¡Felicidades!',
+              style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Es momento de agendar una cita',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white, fontSize: 18),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child:
+                  const Text('OK', style: TextStyle(color: Color(0xFFE5989B))),
+            ),
+          ],
+        ),
+      );
+
+      // 3. Send automated message
+      final msg = "¡Genial! Me alegra que vayamos a ser roomies.\n"
+          "Dirección: ${_apartment!.address}\n"
+          "Día y hora a acordar.";
+
+      await _chatService.sendMessage(widget.chatId, msg);
+      _scrollToBottom();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
       );
     }
   }
@@ -59,34 +162,19 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
     super.dispose();
   }
 
-  final ChatService _chatService = ChatService();
-  final String _currentUserId = Supabase.instance.client.auth.currentUser!.id;
-
-  Map<String, dynamic>? _otherUserProfile;
-  bool _isLoadingProfile = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadChatMetadata();
-  }
-
-  Future<void> _loadChatMetadata() async {
-    final metadata = await _chatService.getChatMetadata(widget.chatId);
-    if (mounted) {
-      setState(() {
-        _otherUserProfile = metadata;
-        _isLoadingProfile = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Default placeholder if loading or not found
     final otherUserName = _otherUserProfile?['full_name'] ?? 'Usuario';
     final otherUserPhoto = _otherUserProfile?['photo_url'];
     final themeProvider = Provider.of<ThemeProvider>(context);
+
+    // Show button only if I am the owner and apartment exists
+    final showRoomiesButton = !_isLoadingProfile &&
+        _apartment != null &&
+        _apartment!.ownerId == _currentUserId &&
+        _apartment!
+            .isActive; // Only show if still active? Or always allow? Assuming prompt: change to occupied.
 
     return Scaffold(
       backgroundColor: const Color(0xFF000000),
@@ -150,6 +238,30 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
                   ),
                 ],
               ),
+        actions: [
+          if (showRoomiesButton)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: ElevatedButton(
+                onPressed: _handleBeRoomies,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFE5989B),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+                child: const Text(
+                  'Ser roomies',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [

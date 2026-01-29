@@ -64,7 +64,16 @@ class AppRouter {
       ),
       GoRoute(
         path: '/map',
-        builder: (context, state) => const MapScreenV2(),
+        builder: (context, state) {
+          final extra = state.extra;
+          List<Map<String, dynamic>>? apartments;
+
+          if (extra is List) {
+            apartments = extra.cast<Map<String, dynamic>>();
+          }
+
+          return MapScreenV2(initialApartments: apartments);
+        },
       ),
       GoRoute(
         path: '/report/:userId',

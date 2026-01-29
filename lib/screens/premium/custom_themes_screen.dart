@@ -105,8 +105,8 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
               ),
             // Preview section
             Container(
-              margin: const EdgeInsets.all(24),
-              padding: const EdgeInsets.all(32),
+              margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: themes.firstWhere(
@@ -118,11 +118,11 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                 ),
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Column(
+              child: Row(
                 children: [
                   Container(
-                    width: 80,
-                    height: 80,
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       shape: BoxShape.circle,
@@ -130,26 +130,31 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                     child: const Icon(
                       Icons.person,
                       color: Colors.white,
-                      size: 40,
+                      size: 24,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Vista Previa',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Vista Previa',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Así se verá tu perfil',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tu perfil se verá así con este tema',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -249,7 +254,7 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
 
             // Intensity Section
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -257,15 +262,14 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                     'Intensidad del Color',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.opacity, color: Colors.grey, size: 20),
-                      const SizedBox(width: 12),
+                      const Icon(Icons.opacity, color: Colors.grey, size: 16),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Slider(
                           value: themeProvider.themeColorOpacity,
@@ -280,7 +284,8 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                       ),
                       Text(
                         '${(themeProvider.themeColorOpacity * 200).toInt()}%',
-                        style: const TextStyle(color: Colors.grey),
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     ],
                   ),
@@ -290,7 +295,7 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
 
             // Wallpaper Section
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -298,21 +303,21 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                     'Fondo de Chat',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Row(
                     children: [
                       GestureDetector(
                         onTap: () => _pickWallpaper(themeProvider),
                         child: Container(
-                          width: 80,
-                          height: 120,
+                          width: 60,
+                          height: 90,
                           decoration: BoxDecoration(
                             color: const Color(0xFF1A1A1A),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                                 color: Colors.white.withOpacity(0.1)),
                             image: themeProvider.chatWallpaperPath != null
@@ -326,18 +331,19 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                           ),
                           child: themeProvider.chatWallpaperPath == null
                               ? const Icon(Icons.add_photo_alternate,
-                                  color: Colors.grey)
+                                  color: Colors.grey, size: 20)
                               : null,
                         ),
                       ),
-                      const SizedBox(width: 24),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Opacidad: ${(themeProvider.chatWallpaperOpacity * 100).toInt()}%',
-                              style: const TextStyle(color: Colors.grey),
+                              style: const TextStyle(
+                                  color: Colors.grey, fontSize: 12),
                             ),
                             Slider(
                               value: themeProvider.chatWallpaperOpacity,
@@ -355,16 +361,19 @@ class _CustomThemesScreenState extends State<CustomThemesScreen> {
                                     themeProvider.setChatWallpaper(null),
                                 icon: const Icon(Icons.delete,
                                     size: 16, color: Colors.red),
-                                label: const Text('Eliminar fondo',
-                                    style: TextStyle(color: Colors.red)),
+                                label: const Text('Eliminar', // Shortened text
+                                    style: TextStyle(
+                                        color: Colors.red, fontSize: 12)),
                                 style: TextButton.styleFrom(
                                   padding: EdgeInsets.zero,
                                   alignment: Alignment.centerLeft,
+                                  visualDensity:
+                                      VisualDensity.compact, // Compact layout
                                 ),
                               ),
                             if (themeProvider.chatWallpaperPath == null)
                               const Text(
-                                'Toca para elegir una imagen de tu galería',
+                                'Toca para elegir imagen',
                                 style:
                                     TextStyle(color: Colors.grey, fontSize: 12),
                               ),

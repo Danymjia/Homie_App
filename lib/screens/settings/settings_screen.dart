@@ -3,15 +3,16 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:roomie_app/providers/auth_provider.dart';
 import 'package:roomie_app/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  State createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State {
   final AuthService _authService = AuthService();
   bool _isLoggingOut = false;
 
@@ -34,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // Premium Section
+// Premium Section
             _buildSection(
               context,
               children: [
@@ -75,14 +76,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     label: 'Cancelar Suscripción',
                     icon: Icons.cancel_outlined,
                     color: Colors.red,
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Para cancelar, visita la tienda de aplicaciones.'),
-                        ),
-                      );
-                    },
+                    onTap: () => _confirmCancelSubscription(context),
                   ),
                 ] else ...[
                   Container(
@@ -112,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // Support Section
+// Support Section
             _buildSection(
               context,
               title: 'Soporte y Ayuda',
@@ -143,7 +137,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 24),
 
-            // Actions Section
+// Actions Section
             _buildSection(
               context,
               title: 'Acciones de Cuenta',
@@ -165,7 +159,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSection(BuildContext context,
-      {String? title, IconData? icon, required List<Widget> children}) {
+      {String? title, IconData? icon, required List children}) {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
@@ -295,5 +289,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  final SupabaseClient _supabase = Supabase.instance.client;
+  bool _isCancelling = false;
+
+  void _confirmCancelSubscription(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: const Text(
+          'Cancelar suscripción',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Seguirás siendo Premium hasta que finalice el período actual. ¿Deseas continuar?',
+          style: TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: _isCancelling
+                ? null
+                : () async {
+                    Navigator.pop(dialogContext);
+                    await _handleCancelSubscription(context);
+                  },
+            child: const Text(
+              'Sí, cancelar',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future _handleCancelSubscription(BuildContext context) async {
+    setState(() => _isCancelling = true);
+
+    try {
+      final response = await _supabase.functions.invoke(
+        'cancel-subscription',
+      );
+
+      if (response.status != 200) {
+        throw response.data?['error'] ?? 'Error al cancelar suscripción';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tu suscripción se cancelará al finalizar el período actual.',
+          ),
+        ),
+      );
+
+// ⚠️ NO cambiar isPremium aquí
+// El webhook lo hará automáticamente
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isCancelling = false);
+      }
+    }
   }
 }

@@ -8,20 +8,24 @@ class ApartmentModel {
   final double price;
   final String description;
   final List<String> images;
-  
+
   // House rules
   final bool allowsSmoking;
   final bool allowsPets;
   final bool allowsAlcohol;
   final bool quietHours;
-  final bool ownLaundry;
-  
+  final bool
+      ownLaundry; // Added missing field definition if needed, but assuming lines match
+
+  // Status
+  final bool isActive;
+
   // Included expenses
   final bool includesWater;
   final bool includesElectricity;
   final bool includesInternet;
   final bool includesGas;
-  
+
   final DateTime createdAt;
 
   ApartmentModel({
@@ -39,6 +43,7 @@ class ApartmentModel {
     this.allowsAlcohol = false,
     this.quietHours = false,
     this.ownLaundry = false,
+    this.isActive = true,
     this.includesWater = false,
     this.includesElectricity = false,
     this.includesInternet = false,
@@ -62,6 +67,7 @@ class ApartmentModel {
       allowsAlcohol: json['allows_alcohol'] as bool? ?? false,
       quietHours: json['quiet_hours'] as bool? ?? false,
       ownLaundry: json['own_laundry'] as bool? ?? false,
+      isActive: json['is_active'] as bool? ?? true,
       includesWater: json['includes_water'] as bool? ?? false,
       includesElectricity: json['includes_electricity'] as bool? ?? false,
       includesInternet: json['includes_internet'] as bool? ?? false,
@@ -86,6 +92,7 @@ class ApartmentModel {
       'allows_alcohol': allowsAlcohol,
       'quiet_hours': quietHours,
       'own_laundry': ownLaundry,
+      'is_active': isActive,
       'includes_water': includesWater,
       'includes_electricity': includesElectricity,
       'includes_internet': includesInternet,

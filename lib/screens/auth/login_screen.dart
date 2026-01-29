@@ -91,29 +91,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: const EdgeInsets.all(24.0),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          }
-                        },
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.05),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_left,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ),
                       const Expanded(
                         child: Center(
                           child: Text(
-                            'Roomie',
+                            'Homie',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 20,
@@ -122,7 +103,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 40),
                     ],
                   ),
                 ),
