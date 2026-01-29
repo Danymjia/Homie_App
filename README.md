@@ -2,7 +2,8 @@
 
 **Homie** es una aplicación móvil moderna desarrollada en Flutter diseñada para facilitar la búsqueda de compañeros de cuarto y departamentos compartidos. Con un enfoque en la seguridad, la facilidad de uso y la conexión en tiempo real, Homie ofrece una experiencia premium para encontrar tu próximo hogar.
 
-#Visita nuestro canal de Youtube
+# Visita nuestro canal de Youtube
+
 **https://youtu.be/1Zv6bsyw2tU**
 
 ## 📱 Características Principales
