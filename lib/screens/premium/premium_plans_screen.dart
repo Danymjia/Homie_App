@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:roomie_app/widgets/bottom_nav_bar.dart';
-import 'dart:convert';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
-import 'package:roomie_app/config/supabase_config.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PremiumPlansScreen extends StatefulWidget {
@@ -15,7 +11,7 @@ class PremiumPlansScreen extends StatefulWidget {
 }
 
 class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
-  String _selectedPlan = 'monthly'; // 'monthly' or 'annual'
+  String _selectedPlan = 'free'; // Default to free
 
   Future<void> _handleSubscribe() async {
     try {
@@ -62,7 +58,7 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
                     alignment: Alignment.centerLeft,
                     child: IconButton(
                       icon: const Icon(Icons.close, color: Colors.white70),
-                      onPressed: () => context.pop(),
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   Column(
@@ -99,227 +95,117 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
             const SizedBox(height: 32),
 
             // Plans
+            // Plans
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
-                    // Monthly plan (Special offer)
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedPlan = 'monthly'),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: const Color(0xFFE57373),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            // Banner
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 6),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFE57373),
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(24),
-                                ),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'OFERTA ESPECIAL',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w900,
-                                    letterSpacing: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Mensual',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          color: _selectedPlan == 'monthly'
-                                              ? const Color(0xFFE57373)
-                                              : Colors.transparent,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: _selectedPlan == 'monthly'
-                                                ? const Color(0xFFE57373)
-                                                : Colors.grey,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: _selectedPlan == 'monthly'
-                                            ? const Icon(
-                                                Icons.check,
-                                                color: Colors.black,
-                                                size: 16,
-                                              )
-                                            : null,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'USD 0.99',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.4),
-                                          fontSize: 14,
-                                          decoration:
-                                              TextDecoration.lineThrough,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Text(
-                                        'Gratis',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 24),
-                                  _buildFeatureItem('Swipes Ilimitados'),
-                                  const SizedBox(height: 12),
-                                  _buildFeatureItem('No Anuncios'),
-                                  const SizedBox(height: 12),
-                                  _buildFeatureItem('Prioridad en Chat'),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Gratis los primeros 7 días, luego USD 0.99/mes',
-                                    style: TextStyle(
-                                      color: Colors.white.withOpacity(0.4),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                    // Free Plan
+                    _buildExpandablePlanCard(
+                      id: 'free',
+                      title: 'FREE',
+                      price: 'Gratis',
+                      features: [
+                        '3 publicaciones',
+                        'anuncios',
+                        'sin prioridad',
+                      ],
+                      isBestValue: false,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Premium Monthly
+                    _buildExpandablePlanCard(
+                      id: 'monthly',
+                      title: 'PREMIUM — \$4.99',
+                      price: '\$4.99 / mes',
+                      features: [
+                        'hasta 10 publicaciones',
+                        'sin anuncios',
+                        'prioridad',
+                        'filtros avanzados',
+                        'verificación incluida',
+                        'auto-boost 24h',
+                        '1 boost mensual',
+                      ],
+                      isBestValue: false,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Premium Annual
+                    _buildExpandablePlanCard(
+                      id: 'annual',
+                      title: 'Anual (\$39.99)',
+                      price: '\$3.33 / mes',
+                      subtitle: '(facturado anualmente)',
+                      features: [
+                        'Incluye todo lo anterior',
+                        'Ahorras 33%',
+                      ],
+                      isBestValue: true,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Extras Section
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Extras',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
+                    const SizedBox(height: 16),
 
-                    // Annual plan
-                    GestureDetector(
-                      onTap: () => setState(() => _selectedPlan = 'annual'),
-                      child: Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: _selectedPlan == 'annual'
-                                ? const Color(0xFFE57373)
-                                : Colors.white.withOpacity(0.1),
-                            width: 1.5,
-                          ),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.85, // Adjust for card height
+                      children: [
+                        _buildGridExtraItem(
+                          title: 'Boost',
+                          price: '\$2.49',
+                          description: 'Top en tu zona 30min',
+                          icon: Icons.flash_on,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  'Anual',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE57373)
-                                        .withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'MEJOR PRECIO',
-                                    style: TextStyle(
-                                      color: Color(0xFFE57373),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Text(
-                                  'USD 4.99',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.4),
-                                    fontSize: 12,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Gratis',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        _buildGridExtraItem(
+                          title: 'Destacado',
+                          price: '\$3.99',
+                          description: '1ro en búsquedas (7 días)',
+                          icon: Icons.star,
                         ),
-                      ),
+                        _buildGridExtraItem(
+                          title: '5 Super Likes',
+                          price: '\$9.99',
+                          description: '¡Diles que te encantan!',
+                          icon: Icons.favorite,
+                        ),
+                        _buildGridExtraItem(
+                          title: 'Top 24h',
+                          price: '\$4.99',
+                          description: 'Visibilidad x24 horas',
+                          icon: Icons.trending_up,
+                        ),
+                        _buildGridExtraItem(
+                          title: 'Verificado',
+                          price: '\$2.99',
+                          description: 'Genera confianza',
+                          icon: Icons.verified,
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 24),
-
-                    // Terms
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Las funciones pueden cambiar en cualquier momento. El pago se cobrará en tu cuenta de App Store. Tras el período de oferta inicial, las renovaciones se realizan con el precio completo. Tu suscripción se renovará automáticamente hasta que la canceles.',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.3),
-                          fontSize: 10,
-                          height: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-
-                    const SizedBox(height: 100),
                   ],
                 ),
               ),
@@ -375,23 +261,203 @@ class _PremiumPlansScreenState extends State<PremiumPlansScreen> {
     );
   }
 
-  Widget _buildFeatureItem(String text) {
-    return Row(
-      children: [
-        const Icon(
-          Icons.check,
-          color: Color(0xFFE57373),
-          size: 20,
-        ),
-        const SizedBox(width: 12),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 14,
+  Widget _buildGridExtraItem({
+    required String title,
+    required String price,
+    required String description,
+    required IconData icon,
+  }) {
+    return InkWell(
+      onTap: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Estamos trabajando en ello'),
+            backgroundColor: Color(0xFFE57373),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
           ),
         ),
-      ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE57373).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFFE57373),
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              price,
+              style: const TextStyle(
+                color: Color(0xFFE57373),
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.5),
+                fontSize: 11,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpandablePlanCard({
+    required String id,
+    required String title,
+    required String price,
+    String? subtitle,
+    required List<String> features,
+    required bool isBestValue,
+  }) {
+    final isSelected = _selectedPlan == id;
+    final isFree = id == 'free';
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedPlan = id;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF121212),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isSelected && !isFree
+                ? const Color(0xFFE57373)
+                : Colors.white.withOpacity(0.1),
+            width: isSelected && !isFree ? 2.0 : 1.5,
+          ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                // Radio / Check
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? (isFree ? Colors.grey : const Color(0xFFE57373))
+                        : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? (isFree ? Colors.grey : const Color(0xFFE57373))
+                          : Colors.grey,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(Icons.check, size: 16, color: Colors.black)
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                      if (subtitle != null)
+                        Text(subtitle,
+                            style: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                                fontSize: 12)),
+                    ],
+                  ),
+                ),
+                // Price side
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(price,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold)),
+                    if (isBestValue)
+                      Container(
+                        margin: const EdgeInsets.only(top: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                            color: const Color(0xFFE57373).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4)),
+                        child: const Text("MEJOR",
+                            style: TextStyle(
+                                color: Color(0xFFE57373),
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold)),
+                      )
+                  ],
+                )
+              ],
+            ),
+            // Expandable Content
+            if (isSelected) ...[
+              const SizedBox(height: 16),
+              const Divider(color: Colors.white24),
+              const SizedBox(height: 16),
+              ...features.map((f) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(children: [
+                      Icon(isFree ? Icons.close : Icons.check,
+                          color: isFree
+                              ? const Color(0xFFE57373)
+                              : const Color(0xFFE57373),
+                          size: 16),
+                      const SizedBox(width: 8),
+                      Text(f,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 14)),
+                    ]),
+                  )),
+            ]
+          ],
+        ),
+      ),
     );
   }
 }

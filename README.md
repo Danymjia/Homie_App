@@ -48,6 +48,16 @@
   - **Database**: PostgreSQL con Row Level Security.
   - **Storage**: Almacenamiento de imágenes.
   - **Edge Functions**: Lógica de servidor para gestión de suscripciones (Stripe).
+- **Monetización**:
+  - Suscripciones Premium (Stripe)
+  - Desbloqueo de likes
+  - Boost de perfil
+  - Límite de 5 swipes diarios (Free)
+- **Gamificación**:
+  - Swipes estilo Tinder
+  - Matchmaking inteligente
+  - Notificaciones de match
+- **Mapas Interactivos**: Geopoisitionamiento de habitaciones
 - **Mapas**: `flutter_map`
 - **Pagos**: Stripe (Suscripciones recurrentes).
 - **Gestión de Estado**: `Provider`.

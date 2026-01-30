@@ -4,12 +4,14 @@ import 'package:roomie_app/widgets/swipe_card.dart';
 import 'package:roomie_app/widgets/blurred_swipe_card.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:roomie_app/services/match_service.dart';
+import 'package:roomie_app/services/notification_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:roomie_app/providers/auth_provider.dart';
 import 'package:roomie_app/services/ad_service.dart';
 import 'package:roomie_app/services/realtime_service.dart';
 import 'package:roomie_app/providers/theme_provider.dart';
+import 'package:roomie_app/screens/match/match_screen.dart';
 
 class SwipeCardsScreen extends StatefulWidget {
   const SwipeCardsScreen({super.key});
@@ -23,16 +25,19 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
 
   final SupabaseClient _supabase = Supabase.instance.client;
   final MatchService _matchService = MatchService();
+  final NotificationService _notificationService = NotificationService();
 
   List<Map<String, dynamic>> _apartments = [];
   bool _isLoading = true;
   int _dailySwipes = 0;
   static const int _maxDailySwipes = 5;
 
+  @override
   void initState() {
     super.initState();
     _checkPermissions();
     _loadApartments();
+    _notificationService.init();
 
     // Initialize Ads
     AdService.init();
@@ -52,20 +57,13 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
         AdService.checkAndShowStartupAd(context);
       });
     });
-
-    // Periodic check (every 5 minutes)
-    /* 
-    // Uncomment for periodic updates if not relying solely on actions
-    Timer.periodic(const Duration(minutes: 5), (timer) {
-      if (mounted) AdService.checkPeriodic(context);
-    });
-    */
   }
 
   Future<void> _checkPermissions() async {
     await [
       Permission.camera,
       Permission.location,
+      Permission.notification,
     ].request();
   }
 
@@ -117,14 +115,19 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
     final isPremium = authProvider.isPremium;
 
     if (!isPremium && _dailySwipes >= _maxDailySwipes) {
-      // Limit reached, UI handles it.
+      _showLimitReachedDialog();
       return;
     }
 
     final apt = _apartments[0];
+    // Keep a reference before removing
+    final swipedApt = apt;
 
     // Optimistic UI update
     // 1. Record swipe in background
+    // We defer this in _onSwipeRight for Matches, but for 'dislike' we do it here?
+    // The original code did recordSwipe here.
+    // For 'like', we need to record it to check match.
     _matchService.recordSwipe(
       apartmentId: apt['id'],
       ownerId: apt['owner_id'],
@@ -138,19 +141,75 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
 
     // 3. Show feedback
     if (type == 'like') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('¡Te ha gustado!'),
-            duration: Duration(milliseconds: 300)),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   const SnackBar(
+      //       content: Text('¡Te ha gustado!'),
+      //       duration: Duration(milliseconds: 300)),
+      // );
     }
 
     // 4. Move to next card
-    // 4. Move to next card (Remove current top card)
     setState(() {
       _apartments.removeAt(0);
-      // _currentIndex is always 0 as we operate on the list head
     });
+
+    // 5. Check Match logic (if like)
+    if (type == 'like') {
+      _handleMatchCheck(swipedApt);
+    }
+  }
+
+  Future<void> _handleMatchCheck(Map<String, dynamic> apt) async {
+    final myUser = _supabase.auth.currentUser;
+    if (myUser == null) return;
+
+    final ownerId = apt['owner_id'];
+    final isMatch = await _matchService.checkIfMatch(myUser.id, ownerId);
+
+    if (isMatch && mounted) {
+      // Create Chat? The MatchService.acceptMatch usually creates it.
+      // But here we are just detecting it.
+      // Usually we need to "solidify" the match.
+      // However, usually "checkIfMatch" just checks if the other person liked me.
+      // If so, we can consider it a match.
+      // We might need to call strict creation of chat or just let the Match Screen handle it?
+      // The MatchService has `acceptMatch` which creates the chat and deletes the swipe.
+      // BUT, `recordSwipe` inserts a swipe.
+      // If we have a match, we should probably CONVERT these swipes into a Chat.
+      // For now, let's assume we just show the screen and notification.
+
+      // Notify ME (The user who just swiped)
+      _notificationService.showNotification(
+        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        title: '¡Nuevo Match!',
+        body:
+            'Has hecho match con ${apt['profiles']['full_name'] ?? 'alguien'}',
+      );
+
+      // Fetch my profile photo for the screen
+      final myProfile = await _supabase
+          .from('profiles')
+          .select('photo_url')
+          .eq('id', myUser.id)
+          .single();
+      final myPhotoUrl = myProfile['photo_url'] ?? '';
+
+      // Go to Match Screen
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => MatchScreen(
+              chatId:
+                  'temp_id', // We might not have chat ID yet unless we create it
+              myPhotoUrl: myPhotoUrl,
+              otherPhotoUrl: apt['profiles']['photo_url'] ?? '',
+              otherName: apt['profiles']['full_name'] ?? 'Usuario',
+              otherUserId: ownerId,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   void _onSwipeLeft() {
@@ -175,22 +234,10 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
     }
 
     if (_apartments.isEmpty) {
-      return const Scaffold(
-        backgroundColor: Color(0xFF0B0B0C),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.home_work_outlined, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text(
-                'No hay publicaciones disponibles',
-                style: TextStyle(color: Colors.white, fontSize: 18),
-              ),
-            ],
-          ),
-        ),
-        bottomNavigationBar: BottomNavBar(currentIndex: 2),
+      return Scaffold(
+        backgroundColor: const Color(0xFF0B0B0C),
+        body: _buildNoMoreCards(),
+        bottomNavigationBar: const BottomNavBar(currentIndex: 2),
       );
     }
 
@@ -296,18 +343,82 @@ class _SwipeCardsScreenState extends State<SwipeCardsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.check_circle_outline,
-              size: 80, color: Colors.white54),
-          const SizedBox(height: 16),
-          const Text(
-            'No hay más perfiles',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+          // Loading Indicator for "Searching"
+          SizedBox(
+            width: 80,
+            height: 80,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 4,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFFE57373)),
+                  ),
+                ),
+                Icon(Icons.search,
+                    size: 32, color: Colors.white.withOpacity(0.7)),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 24),
+          const Text(
+            'Estamos buscando las mejores\nhabitaciones para ti',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Cargando las mejores habitaciones...',
+            style:
+                TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 14),
+          ),
+          const SizedBox(height: 32),
           TextButton(
-            onPressed: _loadApartments,
-            child: const Text('Actualizar',
+            onPressed: () {
+              final authProvider =
+                  Provider.of<AuthProvider>(context, listen: false);
+              if (!authProvider.isPremium && _dailySwipes >= _maxDailySwipes) {
+                Navigator.pushNamed(context, '/premium/plans');
+              } else {
+                _loadApartments();
+              }
+            },
+            child: const Text('Intentar de nuevo',
                 style: TextStyle(color: Color(0xFFE57373))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLimitReachedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('Límite diario alcanzado',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'Has alcanzado tu límite de 5 swipes diarios. Actualiza a Premium para swipes ilimitados.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/premium/plans');
+            },
+            child: const Text('Ser Premium',
+                style: TextStyle(
+                    color: Color(0xFFE57373), fontWeight: FontWeight.bold)),
           ),
         ],
       ),

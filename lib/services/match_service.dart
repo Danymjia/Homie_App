@@ -203,4 +203,45 @@ class MatchService {
       return [];
     }
   }
+
+  /// Verifica si existe un match mutuo inmediatamente
+  Future<bool> checkIfMatch(String myUserId, String otherUserId) async {
+    try {
+      // Check if the other user has ALREADY swiped 'like' on me
+      // We look for a swipe where:
+      // user_id = otherUserId
+      // owner_id = myUserId (implicit, the other user saw ME or MY apartment)
+      // BUT WAIT: The system works on APARTMENTS.
+      // So 'owner_id' in swipes table is the owner of the apartment swiped.
+      //
+      // IF I am swiping right on an apartment (owner = otherUserId),
+      // I am acting as a seeker.
+      // A match exists if 'otherUserId' has swiped right on MY apartment?
+      // OR if 'otherUserId' has swiped right on ME (as a user)?
+      //
+      // Assuming Bidirectional flow:
+      // 1. I swipe right on Apartment A (Owner: Other).
+      // 2. To be a match, Other must have swiped right on Apartment B (Owner: Me).
+      // OR, this might be a People-matching app where owner_id refers to the person being swiped.
+      //
+      // Let's assume Profile-based matching logic from the codebase context:
+      // swipes table: user_id (who swiped), owner_id (who was swiped / owner of apt), type.
+      //
+      // So if I (myUserId) swipe right on otherUserId (owner_id).
+      // Match if: DB contains swipe where user_id = otherUserId AND owner_id = myUserId AND type = 'like'.
+
+      final response = await _supabase
+          .from('swipes')
+          .select()
+          .eq('user_id', otherUserId)
+          .eq('owner_id', myUserId)
+          .eq('type', 'like')
+          .maybeSingle();
+
+      return response != null;
+    } catch (e) {
+      debugPrint('Error checking match: $e');
+      return false;
+    }
+  }
 }

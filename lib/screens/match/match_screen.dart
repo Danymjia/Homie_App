@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:roomie_app/widgets/profile_avatar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MatchScreen extends StatefulWidget {
@@ -118,97 +117,33 @@ class _MatchScreenState extends State<MatchScreen> {
 
               const SizedBox(height: 48),
 
-              // Profile images
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Left profile (Mine)
-                  Positioned(
-                    left: MediaQuery.of(context).size.width * 0.1,
-                    child: Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFE5989B),
-                          width: 4,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFE5989B).withOpacity(0.5),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ProfileAvatar(
-                        imageUrl: widget.myPhotoUrl.isNotEmpty
-                            ? widget.myPhotoUrl
-                            : null,
-                        name: 'Yo',
-                        size: 110,
-                        borderRadius: 50,
-                      ),
-                    ),
+              // Match Icon
+              Container(
+                width: 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5989B).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFFE5989B),
+                    width: 4,
                   ),
-                  // Right profile (Other)
-                  Positioned(
-                    right: MediaQuery.of(context).size.width * 0.1,
-                    child: Container(
-                      width: 110,
-                      height: 110,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFFE5989B),
-                          width: 4,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFE5989B).withOpacity(0.5),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: ProfileAvatar(
-                        imageUrl: widget.otherPhotoUrl.isNotEmpty
-                            ? widget.otherPhotoUrl
-                            : null,
-                        name: widget.otherName,
-                        size: 110,
-                        borderRadius: 50,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFE5989B).withOpacity(0.5),
+                      blurRadius: 30,
+                      spreadRadius: 5,
                     ),
-                  ),
-                  // Heart icon
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE5989B),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFF000000),
-                        width: 4,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFE5989B).withOpacity(0.4),
-                          blurRadius: 15,
-                          spreadRadius: 0,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.favorite,
-                      color: Color(0xFF000000),
-                      size: 28,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Icon(
+                  Icons.handshake_rounded,
+                  color: Color(0xFFE5989B),
+                  size: 80,
+                ),
               ),
+
+              const SizedBox(height: 32),
 
               const SizedBox(height: 32),
 
@@ -277,8 +212,13 @@ class _MatchScreenState extends State<MatchScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        // Replace current route with Chat to avoid back stack loop
-                        context.pushReplacement('/chat/${widget.chatId}');
+                        // Just go back to swipe screen
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          // Fallback if no history
+                          context.go('/home');
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFE5989B),
@@ -290,10 +230,10 @@ class _MatchScreenState extends State<MatchScreen> {
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.chat_bubble, color: Colors.black),
+                          Icon(Icons.chat_bubble_outline, color: Colors.black),
                           SizedBox(width: 8),
                           Text(
-                            'Enviar Mensaje',
+                            'Ir a los chats',
                             style: TextStyle(
                               color: Colors.black,
                               fontSize: 18,
@@ -301,28 +241,6 @@ class _MatchScreenState extends State<MatchScreen> {
                             ),
                           ),
                         ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context), // Back to list
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFF3F3F46)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Seguir Buscando',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
                       ),
                     ),
                   ),

@@ -371,6 +371,22 @@ class _MapScreenV2State extends State<MapScreenV2> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Apartment Image
+            if (apartment['images'] != null &&
+                (apartment['images'] as List).isNotEmpty)
+              Container(
+                height: 200,
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: NetworkImage((apartment['images'] as List)[0]),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+
             Row(
               children: [
                 Expanded(
@@ -405,42 +421,18 @@ class _MapScreenV2State extends State<MapScreenV2> {
             const SizedBox(height: 8),
             Text(
               apartment['description'] ?? 'Sin descripción',
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-              maxLines: 2,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9), // Improved visibility
+                fontSize: 14,
+              ),
+              maxLines: 4, // Increased lines
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context); // Close sheet
-                  // Navigate to Full Detail Action Screen
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          ApartmentDetailScreen(apartment: apartment),
-                    ),
-                  );
-
-                  // If result is true, it means user Swiped (Liked/Disliked)
-                  // So we should remove it from the map
-                  if (result == true) {
-                    _removeApartmentFromMap(apartment['id']);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFFF4B63),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Ver completo & Valorar',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
+            // Removed action button as requested
+            const Text(
+              'Para interactuar, búscala en la sección de Home.',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
           ],
         ),
